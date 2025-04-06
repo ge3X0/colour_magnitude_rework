@@ -19,21 +19,17 @@ from plot_window import PlotWindow
 class MainWindow(QWidget):
     # TODO: show mag via tooltip on hove
 
-    def init_fhd(self, reference_fit, scidata, n_fits, pixel, short_wave_colour,
-                 long_wave_colour, FWHM, ratio_gauss,
-                 factor_threshold, r_aperture):
+    def init_fhd(self, reference_fit, scidata, n_fits, pixel, FWHM, ratio_gauss, factor_threshold, r_aperture):
+        """Initialize pictures and data"""
 
         mean, median, std = util.get_stats(scidata)
-
         self.offset = util.get_offset(scidata, median, std, reference_fit)
 
         # shift and pad the images; we want the original number of pixel -> only part of the padded array needed
         self.shift_data(scidata, n_fits, self.offset, pixel)
 
         # the stars of the images are found here and the positions are saved
-        sources, self.n_stars_min, self.positions = util.detect_star(self.n_stars_min, scidata, median, std, FWHM, ratio_gauss,
-                                                          factor_threshold)
-
+        _, self.n_stars_min, self.positions = util.detect_star(self.n_stars_min, scidata, median, std, FWHM, ratio_gauss, factor_threshold)
 
         self.stars_flux = np.zeros((n_fits, self.n_stars_min))
         self.deselected = np.zeros((self.n_stars_min))
@@ -320,8 +316,7 @@ class MainWindow(QWidget):
         r_aperture = self.input_cmd["r_aperture"]
 
         # the most work is done in init_fhd, it gives all the information for the colour magnitude diagram
-        self.init_fhd(reference_fit, scidata, n_fits, pixel, short_wave_colour, long_wave_colour,
-                      FWHM, ratio_gauss, factor_threshold, r_aperture)
+        self.init_fhd(reference_fit, scidata, n_fits, pixel, FWHM, ratio_gauss, factor_threshold, r_aperture)
         # deselected, n_stars_min, estars_flux, stars_mag_list, positions = self.init_fhd(reference_fit, n_stars_min, scidata,
         #                                                                            n_fits,
         #                                                                            pixel, short_wave_colour,
@@ -414,6 +409,7 @@ class MainWindow(QWidget):
         self.graphics_view.star_chosen.connect(self.info_star)
 
         button_stack = QVBoxLayout()
+        button_stack.addStretch()
 
         reddening_label = QLabel("Reddening")
         self.reddening_box = QDoubleSpinBox(value=0.0)

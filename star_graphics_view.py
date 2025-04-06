@@ -13,10 +13,6 @@ class StarGraphicsView(QGraphicsView):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-    # canvas.bind("<Button-3>", lambda e: info_star(e, canvas, deselected, stars_mag_list, short_wave_colour,
-    #                                               long_wave_colour))  # right click to type in magnitudes
-    # canvas.bind("<Button-2>", lambda e: tag_info(e, canvas, deselected,
-    #                                              stars_mag_list))  # middle mouse, just to see the tags of the selected star
 
     def get_star_at(self, pos: QPoint) -> Optional[StarEllipse]:
         if (star := self.itemAt(pos)) and isinstance(star, StarEllipse):
