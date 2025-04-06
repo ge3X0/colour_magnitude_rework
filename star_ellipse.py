@@ -32,6 +32,8 @@ class StarEllipse(QGraphicsEllipseItem):
         self.index = index
         self.vmag1 = 0.0
         self.vmag2 = 0.0
+        self.flux1 = 0.0
+        self.flux2 = 0.0
 
     @property
     def status(self) -> StarStatus:

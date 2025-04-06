@@ -47,6 +47,8 @@ class MainWindow(QWidget):
             phot = aperture_photometry(scidata[i, :, :] - median[i], apertures)  # the numbers are generated from the specific area of 'apertures'
             self.stars_flux[i, :] = phot['aperture_sum'][0:self.n_stars_min]  # numbers, that represent the luminosity of a star. Not real flux, but similar
 
+        print(self.stars_flux)
+
         # creating the ovals around the stars for user input
         for j in range(self.n_stars_min):
             e = StarEllipse(
@@ -58,6 +60,8 @@ class MainWindow(QWidget):
                            self.positions[reference_fit, j, 1] + 3 / 2 * r_aperture * FWHM,)
                 ),
             )
+            e.flux1 = self.stars_flux[0, j]
+            e.flux2 = self.stars_flux[1, j]
             # TODO: unused?
             # e.setData(1, self.stars_flux[reference_fit, j])
 
@@ -328,6 +332,8 @@ class MainWindow(QWidget):
                 f"{mag_short[star.index]}\t{mag_long[star.index]}\n"
                 for star in filter(lambda x: StarStatus.Selected in x.status, self.graphics_view.stars())]
             fl.writelines(lines)
+
+        QMessageBox.information(self, "", "Data saved successfully")
 
 
     @Slot(QWidget)

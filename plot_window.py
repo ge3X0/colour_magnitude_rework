@@ -91,10 +91,12 @@ class PlotWindow(QWidget):
         stars_mag_1 = []
         stars_mag_2 = []
 
-        for star in stars:
-            if StarStatus.Labeled in star.status:
-                stars_mag_1.append([0, star.index, star.vmag1])
-                stars_mag_2.append([1, star.index, star.vmag2])
+        # labeled_stars = list(filter(lambda x: StarStatus.Labeled in x.status, stars))
+        # n_ref_stars_1 = len(labeled_stars)
+
+        for star in filter(lambda x: StarStatus.Labeled in x.status, stars):
+            stars_mag_1.append([0, star.index, star.vmag1])
+            stars_mag_2.append([1, star.index, star.vmag2])
 
         n_ref_stars_1 = len(stars_mag_1)
 
@@ -108,9 +110,14 @@ class PlotWindow(QWidget):
             ref_mag_RGB = np.zeros((n_ref_stars_1, 2))
             ref_mag_UBV = np.zeros((n_ref_stars_1, 2))
 
+            # for i, star in enumerate(labeled_stars):
+            #     ref_flux[i_ref_star, 0] = stars_flux[0, int(stars_mag_1[i_ref_star][1])]
+            #     ref_flux[i_ref_star, 1] = stars_flux[1, int(stars_mag_2[i_ref_star][1])]
+            #     ref_mag_UBV[i_ref_star, 0] = stars_mag_1[i_ref_star][2]
+            #     ref_mag_UBV[i_ref_star, 1] = stars_mag_2[i_ref_star][2]
             for i_ref_star in range(n_ref_stars_1):
-                ref_flux[i_ref_star, 0] = stars_flux[int(stars_mag_1[i_ref_star][0]), int(stars_mag_1[i_ref_star][1])]
-                ref_flux[i_ref_star, 1] = stars_flux[int(stars_mag_2[i_ref_star][0]), int(stars_mag_2[i_ref_star][1])]
+                ref_flux[i_ref_star, 0] = stars_flux[0, int(stars_mag_1[i_ref_star][1])]
+                ref_flux[i_ref_star, 1] = stars_flux[1, int(stars_mag_2[i_ref_star][1])]
                 ref_mag_UBV[i_ref_star, 0] = stars_mag_1[i_ref_star][2]
                 ref_mag_UBV[i_ref_star, 1] = stars_mag_2[i_ref_star][2]
 
