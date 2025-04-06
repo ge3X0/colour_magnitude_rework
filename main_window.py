@@ -34,7 +34,7 @@ class MainWindow(QWidget):
 
         # the stars of the images are found here and the positions are saved
         _, self.n_stars_min, self.positions = util.detect_star(self.n_stars_min, scidata, median, std, FWHM, self.input_cmd["ratio"], self.input_cmd["threshold"])
-        self.stars_flux = np.zeros((n_fits, self.n_stars_min))
+        stars_flux = np.zeros((n_fits, self.n_stars_min))
 
         # stars flux are only numbers, they are made from a circle around the position of a star and the sum of it.
         for i in range(n_fits):
@@ -45,9 +45,7 @@ class MainWindow(QWidget):
 
             apertures = CircularAperture(arr2d, r=r_aperture * FWHM)  # the area, where the flux is going to be taken from
             phot = aperture_photometry(scidata[i, :, :] - median[i], apertures)  # the numbers are generated from the specific area of 'apertures'
-            self.stars_flux[i, :] = phot['aperture_sum'][0:self.n_stars_min]  # numbers, that represent the luminosity of a star. Not real flux, but similar
-
-        print(self.stars_flux)
+            stars_flux[i, :] = phot['aperture_sum'][0:self.n_stars_min]  # numbers, that represent the luminosity of a star. Not real flux, but similar
 
         # creating the ovals around the stars for user input
         for j in range(self.n_stars_min):
@@ -60,8 +58,8 @@ class MainWindow(QWidget):
                            self.positions[reference_fit, j, 1] + 3 / 2 * r_aperture * FWHM,)
                 ),
             )
-            e.flux1 = self.stars_flux[0, j]
-            e.flux2 = self.stars_flux[1, j]
+            e.flux1 = stars_flux[0, j]
+            e.flux2 = stars_flux[1, j]
             # TODO: unused?
             # e.setData(1, self.stars_flux[reference_fit, j])
 
@@ -273,7 +271,7 @@ class MainWindow(QWidget):
         plot_win = self.create_plot_window()
         plot_win.saving.connect(self.save_fhd_files)
 
-        plot_win.plot_fhd(self.n_stars_min, list(self.graphics_view.stars()), self.input_cmd, self.stars_flux, self.reddening_box.value())
+        plot_win.plot_fhd(self.n_stars_min, list(self.graphics_view.stars()), self.input_cmd, self.reddening_box.value())
         plot_win.show()
 
 
@@ -283,12 +281,12 @@ class MainWindow(QWidget):
 
         # Ask for both values
 
-        typed_mag_1, ok = QInputDialog.getDouble(self, "", self.input_cmd["short_colour"], value=star.vmag1)
+        typed_mag_1, ok = QInputDialog.getDouble(self, "", self.input_cmd["short_colour"], value=star.vmag1, decimals=5)
         if not ok:
             QMessageBox.warning(self, "", "Expected valid floating point number")
             return
 
-        typed_mag_2, ok = QInputDialog.getDouble(self, "", self.input_cmd["long_colour"], value=star.vmag2)
+        typed_mag_2, ok = QInputDialog.getDouble(self, "", self.input_cmd["long_colour"], value=star.vmag2, decimals=5)
         if not ok:
             QMessageBox.warning(self, "", "Expected valid floating point number")
             return
@@ -328,7 +326,7 @@ class MainWindow(QWidget):
             fl.write(f"#ID\tx[px]\ty[px]\tflux_{swc}[ADU]\tflux_{lwc}[ADU]\t{swc}_mag\t{lwc}_mag\n")
             lines = [
                 f"{star.index}\t{self.positions[0,star.index,0]}\t{self.positions[0,star.index,1]}\t"
-                f"{self.stars_flux[0,star.index]}\t{self.stars_flux[1,star.index]}\t"
+                f"{star.flux1}\t{star.flux2}\t"
                 f"{mag_short[star.index]}\t{mag_long[star.index]}\n"
                 for star in filter(lambda x: StarStatus.Selected in x.status, self.graphics_view.stars())]
             fl.writelines(lines)
