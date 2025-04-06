@@ -1,4 +1,4 @@
-from PySide6.QtWidgets import QWidget, QHBoxLayout, QVBoxLayout, QPushButton, QGraphicsScene, QInputDialog, QMessageBox
+from PySide6.QtWidgets import QWidget, QHBoxLayout, QVBoxLayout, QPushButton, QGraphicsScene, QInputDialog, QMessageBox, QDoubleSpinBox, QLabel
 from PySide6.QtCore import QRect, QPoint, Slot
 import numpy as np
 from astropy.io import fits
@@ -13,12 +13,14 @@ from PIL import Image
 
 from star_ellipse import StarEllipse, StarStatus
 from star_graphics_view import StarGraphicsView
+from plot_window import PlotWindow
 
 
 class MainWindow(QWidget):
+    # TODO: show mag via tooltip on hove
 
-    def init_fhd(self, reference_fit, n_stars_min, scidata, n_fits, pixel, short_wave_colour,
-                 long_wave_colour, offset_short_wave, offset_long_wave, reddening, FWHM, ratio_gauss,
+    def init_fhd(self, reference_fit, scidata, n_fits, pixel, short_wave_colour,
+                 long_wave_colour, offset_short_wave, offset_long_wave, FWHM, ratio_gauss,
                  factor_threshold, r_aperture):
 
         mean, median, std = util.get_stats(scidata)
@@ -29,40 +31,40 @@ class MainWindow(QWidget):
         self.shift_data(scidata, n_fits, offset, pixel)
 
         # the stars of the images are found here and the positions are saved
-        sources, n_stars_min, positions = util.detect_star(n_stars_min, scidata, median, std, FWHM, ratio_gauss,
+        sources, self.n_stars_min, self.positions = util.detect_star(self.n_stars_min, scidata, median, std, FWHM, ratio_gauss,
                                                           factor_threshold)
 
 
-        stars_flux = np.zeros((n_fits, n_stars_min))
-        deselected = np.zeros((n_stars_min))
+        self.stars_flux = np.zeros((n_fits, self.n_stars_min))
+        self.deselected = np.zeros((self.n_stars_min))
         self.stars_mag_list = []
 
         # stars flux are only numbers, they are made from a circle around the position of a star and the sum of it.
         for i in range(n_fits):
             arr2d = []
-            for a in range(len(positions[i, :, 0])):
-                print([positions[i, a, 0], positions[i, a, 1]])
-                arr2d.append([positions[i, a, 0], positions[i, a, 1]])
+            for a in range(len(self.positions[i, :, 0])):
+                print([self.positions[i, a, 0], self.positions[i, a, 1]])
+                arr2d.append([self.positions[i, a, 0], self.positions[i, a, 1]])
 
             apertures = CircularAperture(arr2d, r=r_aperture * FWHM)  # the area, where the flux is going to be taken from
             phot = aperture_photometry(scidata[i, :, :] - median[i], apertures)  # the numbers are generated from the specific area of 'apertures'
-            stars_flux[i, :] = phot['aperture_sum'][0:n_stars_min]  # numbers, that represent the luminosity of a star. Not real flux, but similar
+            self.stars_flux[i, :] = phot['aperture_sum'][0:self.n_stars_min]  # numbers, that represent the luminosity of a star. Not real flux, but similar
 
         # creating the ovals around the stars for user input
-        for j in range(n_stars_min):
+        for j in range(self.n_stars_min):
             e = StarEllipse(QRect(
-                    QPoint(positions[reference_fit, j, 0] - 3 / 2 * r_aperture * FWHM,
-                           positions[reference_fit, j, 1] - 3 / 2 * r_aperture * FWHM,),
-                    QPoint(positions[reference_fit, j, 0] + 3 / 2 * r_aperture * FWHM,
-                           positions[reference_fit, j, 1] + 3 / 2 * r_aperture * FWHM,)
+                    QPoint(self.positions[reference_fit, j, 0] - 3 / 2 * r_aperture * FWHM,
+                           self.positions[reference_fit, j, 1] - 3 / 2 * r_aperture * FWHM,),
+                    QPoint(self.positions[reference_fit, j, 0] + 3 / 2 * r_aperture * FWHM,
+                           self.positions[reference_fit, j, 1] + 3 / 2 * r_aperture * FWHM,)
                 )
             )
             e.setData(0, j)
-            e.setData(1, stars_flux[reference_fit, j])
+            e.setData(1, self.stars_flux[reference_fit, j])
 
             self.scene.addItem(e)
 
-        print('Found ' + str(n_stars_min) + ' Stars')
+        print('Found ' + str(self.n_stars_min) + ' Stars')
         print('')
         print(
             'Select the not included stars by left clicking and put in the magnitude via right clicking and then typing in the console. Leave blank for no input')
@@ -73,13 +75,6 @@ class MainWindow(QWidget):
         print('Controls are: Left click - deselect ; right click - type in magnitude')
         print('')
 
-        # canvas.bind("<Button-1>", lambda e: deselect_star(e, canvas, deselected))  # left click to deselect a star
-        # canvas.bind("<Button-3>", lambda e: info_star(e, canvas, deselected, stars_mag_list, short_wave_colour,
-        #                                               long_wave_colour))  # right click to type in magnitudes
-        # canvas.bind("<Button-2>", lambda e: tag_info(e, canvas, deselected,
-        #                                              stars_mag_list))  # middle mouse, just to see the tags of the selected star
-
-        return deselected, n_stars_min, stars_flux, positions
 
     def shift_data(self, data, n_len, offset, pixel):
         for i in range(n_len):
@@ -91,7 +86,7 @@ class MainWindow(QWidget):
             data[i] = tmp[lower0: pixel[0] + lower0, lower1:pixel[1] + lower1]
 
     def setup(self):
-        n_stars_min = 1
+        self.n_stars_min = 1
 
         print('Searching for light frames of short wavelength ...')
         fit_list = util.get_fits_names(self.input_cmd["path_light_short"])
@@ -212,20 +207,6 @@ class MainWindow(QWidget):
 
         reference_fit = 0  # 0 = short wavelength; 1 = long wavelength
 
-        reddening = 0.0
-        # while True:  # offset for the colour-index for the diagram. The value will be subtracted from the index
-        #     print('Reddening correction for interstellar dust extinction? [default: 0.0]')
-        #     reddening = input('  :')
-        #     if reddening == '':
-        #         reddening = '0'
-        #     try:
-        #         reddening = float(reddening)
-        #         print('')
-        #         break
-        #     except:
-        #         print('Not a float, please try again')
-        #         print('')
-
         print('Creating light masters ...')
         print('')
 
@@ -339,8 +320,8 @@ class MainWindow(QWidget):
         r_aperture = self.input_cmd["r_aperture"]
 
         # the most work is done in init_fhd, it gives all the information for the colour magnitude diagram
-        self.init_fhd(reference_fit, n_stars_min, scidata, n_fits, pixel, short_wave_colour, long_wave_colour,
-                      short_wave_offset, long_wave_offset, reddening, FWHM, ratio_gauss, factor_threshold, r_aperture)
+        self.init_fhd(reference_fit, scidata, n_fits, pixel, short_wave_colour, long_wave_colour,
+                      short_wave_offset, long_wave_offset, FWHM, ratio_gauss, factor_threshold, r_aperture)
         # deselected, n_stars_min, estars_flux, stars_mag_list, positions = self.init_fhd(reference_fit, n_stars_min, scidata,
         #                                                                            n_fits,
         #                                                                            pixel, short_wave_colour,
@@ -366,15 +347,20 @@ class MainWindow(QWidget):
 
     @Slot()
     def button_toggle_selection_clicked(self):
-        # deselect_all
-        pass
+        for star in filter(lambda x: isinstance(x, StarEllipse), self.scene.items()):
+            star.status ^= StarStatus.Selected
+
 
     @Slot()
     def button_preview_clicked(self):
-        # plot_fhd(n_stars_min, stars_flux, deselected, short_wave_colour,
-    #         #                                                 long_wave_colour, reddening, stars_mag_list, positions,
-    #         #                                                 path_save, time_stamp, False)
-        pass
+        plt_win = PlotWindow()
+        plt_win.closed.connect(self.plot_window_closed)
+
+        plt_win.plot_fhd(self.n_stars_min, self.stars_flux, self.deselected, self.input_cmd["short_colour"], self.input_cmd["long_colour"], self.reddening_box.value(), self.stars_mag_list, self.positions, self.input_cmd["path_result"], False)
+        plt_win.show()
+
+        self.plot_windows.add(plt_win)
+
 
     @Slot(StarEllipse)
     def info_star(self, star: StarEllipse): # event, canvas, deselected, stars_mag_list, short_wave_colour, long_wave_colour):
@@ -409,8 +395,16 @@ class MainWindow(QWidget):
         star.setData(2, typed_mag_1)
         star.setData(3, typed_mag_2)
 
+
+    @Slot(QWidget)
+    def plot_window_closed(self, win: QWidget):
+        self.plot_windows.remove(win)
+
+
     def __init__(self):
         super().__init__()
+
+        self.plot_windows = set()
 
         with open("input_cmd.toml", "rb") as fl:
             self.input_cmd = tomllib.load(fl)
@@ -420,6 +414,11 @@ class MainWindow(QWidget):
         self.graphics_view.star_chosen.connect(self.info_star)
 
         button_stack = QVBoxLayout()
+
+        reddening_label = QLabel("Reddening")
+        self.reddening_box = QDoubleSpinBox(value=0.0)
+        button_stack.addWidget(reddening_label)
+        button_stack.addWidget(self.reddening_box)
 
         button_offset_master = QPushButton("Masters Offset")
         button_offset_master.clicked.connect(self.button_offset_master_clicked)
