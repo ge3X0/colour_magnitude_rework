@@ -269,6 +269,7 @@ class MainWindow(QWidget):
 
     @Slot(StarEllipse)
     def info_star(self, star: StarEllipse): # event, canvas, stars_mag_list, short_wave_colour, long_wave_colour):
+        # TODO: remove from list on 0 0
         index = star.data(0)
 
         typed_mag_1, ok = QInputDialog.getDouble(self, "", self.input_cmd["short_colour"])
@@ -300,6 +301,7 @@ class MainWindow(QWidget):
         # TODO: unused
         star.setData(2, typed_mag_1)
         star.setData(3, typed_mag_2)
+        star.setToolTip(f"{self.input_cmd['short_colour']}: {typed_mag_1} | {self.input_cmd['long_colour']}: {typed_mag_2}")
 
 
     @Slot(QWidget)
