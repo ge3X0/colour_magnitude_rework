@@ -8,7 +8,7 @@ import util
 
 import tomllib
 from pathlib import Path
-from datetime import date, datetime
+from datetime import datetime
 
 from PIL import Image
 
@@ -18,14 +18,12 @@ from plot_window import PlotWindow
 
 
 class MainWindow(QWidget):
-    # TODO: show mag via tooltip on hove
-
     def init_fhd(self, reference_fit, scidata, n_fits, pixel):
         """Initialize pictures and data"""
 
         FWHM = self.input_cmd["FWHM"]
         r_aperture = self.input_cmd["r_aperture"]
-        mean, median, std = util.get_stats(scidata)
+        _, median, std = util.get_stats(scidata)
         self.offset = util.get_offset(scidata, median, std, reference_fit)
 
         # shift and pad the images; we want the original number of pixel -> only part of the padded array needed
@@ -55,6 +53,7 @@ class MainWindow(QWidget):
                 )
             )
             e.index = j
+            # TODO: unused?
             # e.setData(1, self.stars_flux[reference_fit, j])
 
             self.scene.addItem(e)
@@ -65,7 +64,6 @@ class MainWindow(QWidget):
         The colours mean: green - in the cluster ; red - not in the cluster ; blue - magnitude has been typed in ; orange - magnitude is given, but not in the cluster
         Controls are: Left click - deselect ; right click - type in magnitude
         """)
-
 
 
     def shift_data(self, data, n_len, offset, pixel):
@@ -109,6 +107,7 @@ class MainWindow(QWidget):
 
         hdulist_short.writeto(path_save / f"{self.input_cmd['short_colour']}_{tme}.fits", overwrite=True)
         hdulist_long.writeto(path_save / f"{self.input_cmd['long_colour']}_{tme}.fits", overwrite=True)
+
 
     def setup(self):
         self.n_stars_min = 1
@@ -240,17 +239,20 @@ class MainWindow(QWidget):
         plot_win.plot_offset(self.offset)
         plot_win.show()
 
+
     @Slot()
     def button_offset_short_clicked(self):
         plot_win = self.create_plot_window()
         plot_win.plot_offset(self.short_wave_offset)
         plot_win.show()
 
+
     @Slot()
     def button_offset_long_clicked(self):
         plot_win = self.create_plot_window()
         plot_win.plot_offset(self.long_wave_offset)
         plot_win.show()
+
 
     @Slot()
     def button_toggle_selection_clicked(self):
@@ -261,6 +263,7 @@ class MainWindow(QWidget):
     @Slot()
     def button_preview_clicked(self):
         plot_win = self.create_plot_window()
+        plot_win.saving.connect(self.save_fhd_files)
 
         plot_win.plot_fhd(self.n_stars_min, list(self.graphics_view.stars()), self.input_cmd, self.stars_flux, self.reddening_box.value())
         plot_win.show()
@@ -282,13 +285,29 @@ class MainWindow(QWidget):
         self.logger.append(f"Set {star.index} to {typed_mag_1} and {typed_mag_2}")
 
         star.status |= StarStatus.Labeled
-        # TODO: unused
         star.vmag1 = typed_mag_1
         star.vmag2 = typed_mag_2
-        # star.setData(2, typed_mag_1)
-        # star.setData(3, typed_mag_2)
 
         star.setToolTip(f"{self.input_cmd['short_colour']}: {typed_mag_1} | {self.input_cmd['long_colour']}: {typed_mag_2}")
+
+
+    @Slot(np.ndarray, np.ndarray)
+    def save_fhd_files(self, mag_short: np.ndarray, mag_long: np.ndarray):
+        swc = self.input_cmd["short_colour"]
+        lwc = self.input_cmd["long_colour"]
+
+        save_file = Path(self.input_cmd["path_result"]) / f"colour_mag_diagram_{swc}-{lwc}_{datetime.now().strftime('%Y-%m-%dT%H-%M-%S')}.dat"
+        if not save_file.exists():
+            save_file.parent.mkdir(parents=True, exist_ok=True)
+
+        with save_file.open("w+") as fl:
+            fl.write(f"#ID\tx[px]\ty[px]\tflux_{swc}[ADU]\tflux_{lwc}[ADU]\t{swc}_mag\t{lwc}_mag\n")
+            lines = [
+                f"{star.index}\t{self.positions[0,star.index,0]}\t{self.positions[0,star.index,1]}\t"
+                f"{self.stars_flux[0,star.index]}\t{self.stars_flux[1,star.index]}\t"
+                f"{mag_short[star.index]}\t{mag_long[star.index]}\n"
+                for star in filter(lambda x: StarStatus.Selected in x.status, self.graphics_view.stars())]
+            fl.writelines(lines)
 
 
     @Slot(QWidget)
@@ -344,9 +363,8 @@ class MainWindow(QWidget):
         self.setup()
 
     def close(self, /):
+        # TODO: Check if saved?
         pass
-        # plot_fhd(n_stars_min, stars_flux, short_wave_colour, long_wave_colour, reddeningt,
-        #          positions, path_save, time_stamp, True)  # creating the diagram
 
     def create_plot_window(self) -> PlotWindow:
         plot_win = PlotWindow()
