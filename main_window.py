@@ -20,6 +20,7 @@ from plot_window import PlotWindow
 class MainWindow(QWidget):
     # TODO: save selection and values
     # TODO: dump log if wanted
+    # TODO: flip diagram
 
     def init_fhd(self, reference_fit, scidata, n_fits, pixel):
         """Initialize pictures and data"""

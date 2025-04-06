@@ -15,6 +15,7 @@ class StarGraphicsView(QGraphicsView):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.setDragMode(QGraphicsView.DragMode.ScrollHandDrag)
 
 
     def stars(self) -> Iterator[StarEllipse]:
@@ -31,7 +32,6 @@ class StarGraphicsView(QGraphicsView):
 
 
     def mousePressEvent(self, event: QMouseEvent):
-        # TODO: manual drag?
         match event.button():
             # Select or deselect a star to be part of the star-accumulation
             case Qt.MouseButton.LeftButton:
@@ -44,6 +44,9 @@ class StarGraphicsView(QGraphicsView):
 
             case _:
                 pass
+
+        super().mousePressEvent(event)
+
 
     def wheelEvent(self, event: QWheelEvent):
         """Implement zoom functionality"""
