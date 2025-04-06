@@ -5,6 +5,10 @@ from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
 
 import numpy as np
 
+from star_ellipse import StarEllipse, StarStatus
+
+from typing import Iterator
+
 
 class PlotWindow(QWidget):
     closed = Signal(QWidget)
@@ -49,8 +53,8 @@ class PlotWindow(QWidget):
         ax2.set_xlabel('Image Number')
 
 
-    def plot_fhd(self, n_stars_min, stars_flux, deselected, short_wave_colour, long_wave_colour, reddening, stars_mag_list,
-                 positions, path_save, quit_save=False):
+    def plot_fhd(self, n_stars_min: int, stars: Iterator[StarEllipse],
+                 input_cmd: dict, stars_flux, reddening, stars_mag_list):
         ax = self.figure_canvas.figure.subplots()
 
         stars_mag_1 = []
@@ -132,33 +136,39 @@ class PlotWindow(QWidget):
         colour_index = mag_short - mag_long
         colour_index_0 = colour_index - reddening
 
-        if arbitrary_unit_mag == 0:
-            ax.set_ylabel(long_wave_colour + ' [mag]')
-        else:
-            ax.set_ylabel(long_wave_colour + ' [a.u.]')
+        ex = "[mag]" if arbitrary_unit_mag == 0 else "[a.u.]"
+        ax.set_ylabel(f"{input_cmd['long_colour']} {ex}")
 
-        if quit_save:
-            # TODO timestamp
-            time_stamp = "TODO"
-            f = open(path_save + '/colour_mag_diagram_%s-%s_%s.dat' % (short_wave_colour, long_wave_colour, time_stamp), 'w')
+        # if quit_save:
+        #     # TODO timestamp
+            # TODO saving
+        #     time_stamp = "TODO"
+        #     f = open(path_save + '/colour_mag_diagram_%s-%s_%s.dat' % (short_wave_colour, long_wave_colour, time_stamp), 'w')
+        #
+        #     f.write('#ID\tx[px]\ty[px]\t')
+        #     f.write('flux_%s[ADU]\tflux_%s[ADU]\t%s_mag\t%s_mag\n' % (short_wave_colour, long_wave_colour, short_wave_colour, long_wave_colour))
 
-            f.write('#ID\tx[px]\ty[px]\t')
-            f.write('flux_%s[ADU]\tflux_%s[ADU]\t%s_mag\t%s_mag\n' % (short_wave_colour, long_wave_colour, short_wave_colour, long_wave_colour))
+        for star in stars:
+            if not StarStatus.Selected in star.status:
+                continue
+            idx = star.data(0)
+            ax.plot(colour_index_0[idx], mag_long[idx], 'bo')
+            # if quit_save:
+            #     f.write(f"{idx}\t{positions[0, idx, 0]}\t{positions[0, idx, 1]}\t"
+            #             f"{stars_flux[0, idx]}\t{stars_flux[1, idx]}\t"
+            #             f"{mag_short[idx]}\t{mag_long[idx]}\n")
 
-        for i in range(n_stars_min):
-            if deselected[i] == 0:  # 1 means not in the cluster
-                ax.plot(colour_index_0[i], mag_long[i], 'bo')
-                if quit_save:
-                    f.write('%3.3i \t %5.1f \t %5.1f \t %10.4f \t %10.4f \t %8.4f \t %8.4f \n'
-                            % (i, positions[0, i, 0], positions[0, i, 1],
-                               stars_flux[0, i], stars_flux[1, i],
-                               mag_short[i], mag_long[i]))
+        # for i in range(n_stars_min):
+        #     if deselected[i] == 0:  # 1 means not in the cluster
+        #         ax.plot(colour_index_0[i], mag_long[i], 'bo')
+        #         if quit_save:
+        #             f.write('%3.3i \t %5.1f \t %5.1f \t %10.4f \t %10.4f \t %8.4f \t %8.4f \n'
+        #                     % (i, positions[0, i, 0], positions[0, i, 1],
+        #                        stars_flux[0, i], stars_flux[1, i],
+        #                        mag_short[i], mag_long[i]))
 
         ax.invert_yaxis()
-        if arbitrary_unit_mag == 0:
-            ax.set_xlabel('Colour Index (%s-%s)_0 [mag]' % (short_wave_colour, long_wave_colour))
-        else:
-            ax.set_xlabel('Colour Index (%s-%s)_0 [a.u.]' % (short_wave_colour, long_wave_colour))
+        ax.set_xlabel(f"Colour Index ({input_cmd['short_colour']}-{input_cmd['long_colour']}) {ex}")
 
-        if quit_save:
-            f.close()
+        # if quit_save:
+        #     f.close()

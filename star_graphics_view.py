@@ -4,7 +4,7 @@ from PySide6.QtCore import Qt, QPoint, Signal
 
 from star_ellipse import StarStatus, StarEllipse
 
-from typing import Optional
+from typing import Optional, Iterator
 
 
 class StarGraphicsView(QGraphicsView):
@@ -13,6 +13,8 @@ class StarGraphicsView(QGraphicsView):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+    def stars(self) -> Iterator[StarEllipse]:
+        return filter(lambda x: isinstance(x, StarEllipse), self.scene().items())
 
     def get_star_at(self, pos: QPoint) -> Optional[StarEllipse]:
         if (star := self.itemAt(pos)) and isinstance(star, StarEllipse):
