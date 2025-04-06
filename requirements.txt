@@ -1,0 +1,7 @@
+PySide6 >= 6.9.0
+numpy >= 2.2.4
+astropy >= 7.0.1
+photutils >= 2.2.0
+pillow >= 11.1.0
+matplotlib >= 3.10.1
+scipy >= 1.15.2

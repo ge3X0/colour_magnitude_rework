@@ -61,8 +61,6 @@ class MainWindow(QWidget):
             )
             e.flux1 = stars_flux[0, j]
             e.flux2 = stars_flux[1, j]
-            # TODO: unused?
-            # e.setData(1, self.stars_flux[reference_fit, j])
 
             self.scene.addItem(e)
 
@@ -207,16 +205,6 @@ class MainWindow(QWidget):
         scidata[1, :, :] = master_long_wave
 
         del master_long_wave, master_short_wave
-
-        # TODO why do we do this??
-        # if n_short_light == 1:
-        #     fit_list.append(fit_list_temp[0])
-        # else:
-        #     fit_list.append('short_wave_master_light')
-        # if n_long_light == 1:
-        #     fit_list.append(fit_list_temp[1])
-        # else:
-        #     fit_list.append('long_wave_master_light')
 
         n_fits = len(scidata[:, 0, 0])
 
