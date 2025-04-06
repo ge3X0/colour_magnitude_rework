@@ -7,8 +7,6 @@ import numpy as np
 
 from star_ellipse import StarEllipse, StarStatus
 
-from typing import Iterator
-
 
 class PlotWindow(QWidget):
     closed = Signal(QWidget)
@@ -62,8 +60,8 @@ class PlotWindow(QWidget):
 
         for star in stars:
             if StarStatus.Labeled in star.status:
-                stars_mag_1.append([0, star.data(0), star.data(2)])
-                stars_mag_2.append([1, star.data(0), star.data(3)])
+                stars_mag_1.append([0, star.index, star.vmag1])
+                stars_mag_2.append([1, star.index, star.vmag2])
 
         n_ref_stars_1 = len(stars_mag_1)
 
@@ -148,10 +146,9 @@ class PlotWindow(QWidget):
         #     f.write('flux_%s[ADU]\tflux_%s[ADU]\t%s_mag\t%s_mag\n' % (short_wave_colour, long_wave_colour, short_wave_colour, long_wave_colour))
 
         for star in stars:
-            if not StarStatus.Selected in star.status:
+            if StarStatus.Selected not in star.status:
                 continue
-            idx = star.data(0)
-            ax.plot(colour_index_0[idx], mag_long[idx], 'bo')
+            ax.plot(colour_index_0[star.index], mag_long[star.index], 'bo')
             # if quit_save:
             #     f.write(f"{idx}\t{positions[0, idx, 0]}\t{positions[0, idx, 1]}\t"
             #             f"{stars_flux[0, idx]}\t{stars_flux[1, idx]}\t"

@@ -54,9 +54,8 @@ class MainWindow(QWidget):
                            self.positions[reference_fit, j, 1] + 3 / 2 * r_aperture * FWHM,)
                 )
             )
-            e.setData(0, j)
-            # TODO: unused?
-            e.setData(1, self.stars_flux[reference_fit, j])
+            e.index = j
+            # e.setData(1, self.stars_flux[reference_fit, j])
 
             self.scene.addItem(e)
 
@@ -80,6 +79,7 @@ class MainWindow(QWidget):
 
 
     def save_fits_files(self, scidata, n_short_light, n_long_light, short_wave_FIT_list, long_wave_FIT_list):
+        return # TODO: remove in final version
         path_save = Path(self.input_cmd["path_result"])
 
         if not path_save.exists():
@@ -269,8 +269,6 @@ class MainWindow(QWidget):
     @Slot(StarEllipse)
     def info_star(self, star: StarEllipse):
         # TODO: remove from list on 0 0
-        index = star.data(0)
-
         typed_mag_1, ok = QInputDialog.getDouble(self, "", self.input_cmd["short_colour"])
         if not ok:
             QMessageBox.warning(self, "", "Expected valid floating point number")
@@ -281,12 +279,14 @@ class MainWindow(QWidget):
             QMessageBox.warning(self, "", "Expected valid floating point number")
             return
 
-        self.logger.append(f"Set {index} to {typed_mag_1} and {typed_mag_2}")
+        self.logger.append(f"Set {star.index} to {typed_mag_1} and {typed_mag_2}")
 
         star.status |= StarStatus.Labeled
         # TODO: unused
-        star.setData(2, typed_mag_1)
-        star.setData(3, typed_mag_2)
+        star.vmag1 = typed_mag_1
+        star.vmag2 = typed_mag_2
+        # star.setData(2, typed_mag_1)
+        # star.setData(3, typed_mag_2)
 
         star.setToolTip(f"{self.input_cmd['short_colour']}: {typed_mag_1} | {self.input_cmd['long_colour']}: {typed_mag_2}")
 

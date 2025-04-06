@@ -29,6 +29,10 @@ class StarEllipse(QGraphicsEllipseItem):
         self.__status = StarStatus.Selected
         self.setPen(Pens.from_status(self.__status))
 
+        self.index = -1
+        self.vmag1 = 0.0
+        self.vmag2 = 0.0
+
     @property
     def status(self) -> StarStatus:
         return self.__status
