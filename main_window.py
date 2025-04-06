@@ -13,6 +13,10 @@ from datetime import datetime, time
 
 from PIL import Image
 
+
+from star_ellipse import StarEllipse
+
+
 class MainWindow(QWidget):
 
     def init_fhd(self, reference_fit, n_stars_min, scidata, n_fits, pixel, short_wave_colour,
@@ -47,19 +51,18 @@ class MainWindow(QWidget):
             stars_flux[i, :] = phot['aperture_sum'][0:n_stars_min]  # numbers, that represent the luminosity of a star. Not real flux, but similar
 
         # creating the ovals around the stars for user input
-        pen = QPen("green")
         for j in range(n_stars_min):
-            e = self.scene.addEllipse(
-                QRect(
+            e = StarEllipse(QRect(
                     QPoint(positions[reference_fit, j, 0] - 3 / 2 * r_aperture * FWHM,
                            positions[reference_fit, j, 1] - 3 / 2 * r_aperture * FWHM,),
                     QPoint(positions[reference_fit, j, 0] + 3 / 2 * r_aperture * FWHM,
                            positions[reference_fit, j, 1] + 3 / 2 * r_aperture * FWHM,)
-                ),
-                pen=pen
+                )
             )
             e.setData(0, j)
             e.setData(1, stars_flux[reference_fit, j])
+
+            self.scene.addItem(e)
 
         print('Found ' + str(n_stars_min) + ' Stars')
         print('')
