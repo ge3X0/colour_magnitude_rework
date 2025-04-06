@@ -1,6 +1,6 @@
 from PySide6.QtWidgets import QWidget, QHBoxLayout, QVBoxLayout, QPushButton, QGraphicsView, QGraphicsScene
 from PySide6.QtGui import QPen, QBrush
-from PySide6.QtCore import QRect, QPoint
+from PySide6.QtCore import QRect, QPoint, Slot
 import numpy as np
 from astropy.io import fits
 from photutils.aperture import CircularAperture, aperture_photometry
@@ -14,10 +14,6 @@ from datetime import datetime, time
 from PIL import Image
 
 class MainWindow(QWidget):
-
-    # working horse for the colour-magnitude diagram, it links to functions to: align the images, find the stars and the control over the stars.
-    #
-
 
     def init_fhd(self, reference_fit, n_stars_min, scidata, n_fits, pixel, short_wave_colour,
                  long_wave_colour, offset_short_wave, offset_long_wave, reddening, FWHM, ratio_gauss,
@@ -34,27 +30,6 @@ class MainWindow(QWidget):
         sources, n_stars_min, positions = util.detect_star(n_stars_min, scidata, median, std, FWHM, ratio_gauss,
                                                           factor_threshold)
 
-        # b_offset = tkinter.Button(root, text='Masters Offset', command=lambda: aux.plot_offset(offset))
-        # b_offset.grid(row=0, column=0)  # the offset of the possible light masters can be viewed here
-        #
-        # b_offset_short = tkinter.Button(root, text='Plot ' + short_wave_colour + ' Offset',
-        #                                 command=lambda: aux.plot_offset(offset_short_wave))
-        # b_offset_short.grid(row=0, column=1)  # the offset of the fits before the light master has been created
-        #
-        # b_offset_long = tkinter.Button(root, text='Plot ' + long_wave_colour + ' Offset',
-        #                                command=lambda: aux.plot_offset(offset_long_wave))
-        # b_offset_long.grid(row=0, column=2)  # the offset of the fits before the light master has been created
-        #
-        # b_deselect_all = tkinter.Button(root, text='Toggle deselection',
-        #                                 command=lambda: deselect_all(n_stars_min, canvas, deselected))
-        # b_deselect_all.grid(row=0,
-        #                     column=3)  # for checking single stars, toggle all stars to or from deselected with a single click
-        #
-        # b_fhd = tkinter.Button(root, text='Preview Diagrams',
-        #                        command=lambda: plot_fhd(n_stars_min, stars_flux, deselected, short_wave_colour,
-        #                                                 long_wave_colour, reddening, stars_mag_list, positions,
-        #                                                 path_save, time_stamp, False))
-        # b_fhd.grid(row=0, column=4)  # take a look at the diagrams without closing everything
 
         stars_flux = np.zeros((n_fits, n_stars_min))
         deselected = np.zeros((n_stars_min))
@@ -373,6 +348,32 @@ class MainWindow(QWidget):
         #                                                                            reddening, FWHM, ratio_gauss,
         #                                                                            factor_threshold, r_aperture)
 
+    @Slot()
+    def button_offset_master_clicked(self):
+        # util.plot_offset(offset)
+        pass
+
+    @Slot()
+    def button_offset_short_clicked(self):
+        # util.plot_offset(offset_short_wave)
+        pass
+
+    @Slot()
+    def button_offset_long_clicked(self):
+        # util.plot_offset(offset_long_wave)
+        pass
+
+    @Slot()
+    def button_toggle_selection_clicked(self):
+        # deselect_all
+        pass
+
+    @Slot()
+    def button_preview_clicked(self):
+        # plot_fhd(n_stars_min, stars_flux, deselected, short_wave_colour,
+    #         #                                                 long_wave_colour, reddening, stars_mag_list, positions,
+    #         #                                                 path_save, time_stamp, False)
+        pass
 
     def __init__(self):
         super().__init__()
@@ -384,6 +385,26 @@ class MainWindow(QWidget):
         self.graphics_view = QGraphicsView(self.scene)
 
         button_stack = QVBoxLayout()
+
+        button_offset_master = QPushButton("Masters Offset")
+        button_offset_master.clicked.connect(self.button_offset_master_clicked)
+        button_stack.addWidget(button_offset_master)
+
+        button_offset_short = QPushButton(f"Plot {self.input_cmd['short_colour']} Offset")
+        button_offset_short.clicked.connect(self.button_offset_short_clicked)
+        button_stack.addWidget(button_offset_short)
+
+        button_offset_long = QPushButton(f"Plot {self.input_cmd['long_colour']} Offset")
+        button_offset_long.clicked.connect(self.button_offset_long_clicked)
+        button_stack.addWidget(button_offset_long)
+
+        button_toggle_selection = QPushButton("Toggle Selection")
+        button_toggle_selection.clicked.connect(self.button_toggle_selection_clicked)
+        button_stack.addWidget(button_toggle_selection)
+
+        button_preview = QPushButton("Preview Diagrams")
+        button_preview.clicked.connect(self.button_preview_clicked)
+        button_stack.addWidget(button_preview)
 
         self.layout = QHBoxLayout(self)
         self.layout.addWidget(self.graphics_view)
