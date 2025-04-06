@@ -34,7 +34,6 @@ class MainWindow(QWidget):
         # the stars of the images are found here and the positions are saved
         _, self.n_stars_min, self.positions = util.detect_star(self.n_stars_min, scidata, median, std, FWHM, self.input_cmd["ratio"], self.input_cmd["threshold"])
         self.stars_flux = np.zeros((n_fits, self.n_stars_min))
-        self.stars_mag_list = []
 
         # stars flux are only numbers, they are made from a circle around the position of a star and the sum of it.
         for i in range(n_fits):
@@ -263,12 +262,12 @@ class MainWindow(QWidget):
     def button_preview_clicked(self):
         plot_win = self.create_plot_window()
 
-        plot_win.plot_fhd(self.n_stars_min, self.graphics_view.stars(), self.input_cmd, self.stars_flux, self.reddening_box.value(), self.stars_mag_list)
+        plot_win.plot_fhd(self.n_stars_min, list(self.graphics_view.stars()), self.input_cmd, self.stars_flux, self.reddening_box.value())
         plot_win.show()
 
 
     @Slot(StarEllipse)
-    def info_star(self, star: StarEllipse): # event, canvas, stars_mag_list, short_wave_colour, long_wave_colour):
+    def info_star(self, star: StarEllipse):
         # TODO: remove from list on 0 0
         index = star.data(0)
 
@@ -282,25 +281,13 @@ class MainWindow(QWidget):
             QMessageBox.warning(self, "", "Expected valid floating point number")
             return
 
-        # TODO: remove stars_mag_list
-        for i in range(len(self.stars_mag_list)):
-            if self.stars_mag_list[i][0] == 0 and self.stars_mag_list[i][1] == index:
-                self.stars_mag_list.pop(i)
-                break
-        self.stars_mag_list.append([0, index, typed_mag_1])
-
-        for i in range(len(self.stars_mag_list)):
-            if self.stars_mag_list[i][0] == 1 and self.stars_mag_list[i][1] == index:
-                self.stars_mag_list.pop(i)
-                break
-        self.stars_mag_list.append([1, index, typed_mag_2])
-
         self.logger.append(f"Set {index} to {typed_mag_1} and {typed_mag_2}")
 
         star.status |= StarStatus.Labeled
         # TODO: unused
         star.setData(2, typed_mag_1)
         star.setData(3, typed_mag_2)
+
         star.setToolTip(f"{self.input_cmd['short_colour']}: {typed_mag_1} | {self.input_cmd['long_colour']}: {typed_mag_2}")
 
 
@@ -358,7 +345,7 @@ class MainWindow(QWidget):
 
     def close(self, /):
         pass
-        # plot_fhd(n_stars_min, stars_flux, short_wave_colour, long_wave_colour, reddening, stars_mag_list,
+        # plot_fhd(n_stars_min, stars_flux, short_wave_colour, long_wave_colour, reddeningt,
         #          positions, path_save, time_stamp, True)  # creating the diagram
 
     def create_plot_window(self) -> PlotWindow:

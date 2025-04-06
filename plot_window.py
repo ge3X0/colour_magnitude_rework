@@ -53,18 +53,17 @@ class PlotWindow(QWidget):
         ax2.set_xlabel('Image Number')
 
 
-    def plot_fhd(self, n_stars_min: int, stars: Iterator[StarEllipse],
-                 input_cmd: dict, stars_flux, reddening, stars_mag_list):
+    def plot_fhd(self, n_stars_min: int, stars: list[StarEllipse],
+                 input_cmd: dict, stars_flux, reddening):
         ax = self.figure_canvas.figure.subplots()
 
         stars_mag_1 = []
         stars_mag_2 = []
 
-        for i in range(len(stars_mag_list)):
-            if stars_mag_list[i][0] == 0:
-                stars_mag_1.append(stars_mag_list[i])
-            elif stars_mag_list[i][0] == 1:
-                stars_mag_2.append(stars_mag_list[i])
+        for star in stars:
+            if StarStatus.Labeled in star.status:
+                stars_mag_1.append([0, star.data(0), star.data(2)])
+                stars_mag_2.append([1, star.data(0), star.data(3)])
 
         n_ref_stars_1 = len(stars_mag_1)
 
