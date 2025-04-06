@@ -1,5 +1,4 @@
-from PySide6.QtWidgets import QWidget, QHBoxLayout, QVBoxLayout, QPushButton, QGraphicsView, QGraphicsScene
-from PySide6.QtGui import QPen, QBrush
+from PySide6.QtWidgets import QWidget, QHBoxLayout, QVBoxLayout, QPushButton, QGraphicsScene, QInputDialog, QMessageBox
 from PySide6.QtCore import QRect, QPoint, Slot
 import numpy as np
 from astropy.io import fits
@@ -9,12 +8,11 @@ import util
 
 import tomllib
 from pathlib import Path
-from datetime import datetime, time
 
 from PIL import Image
 
-
-from star_ellipse import StarEllipse
+from star_ellipse import StarEllipse, StarStatus
+from star_graphics_view import StarGraphicsView
 
 
 class MainWindow(QWidget):
@@ -37,7 +35,7 @@ class MainWindow(QWidget):
 
         stars_flux = np.zeros((n_fits, n_stars_min))
         deselected = np.zeros((n_stars_min))
-        stars_mag_list = []
+        self.stars_mag_list = []
 
         # stars flux are only numbers, they are made from a circle around the position of a star and the sum of it.
         for i in range(n_fits):
@@ -81,7 +79,7 @@ class MainWindow(QWidget):
         # canvas.bind("<Button-2>", lambda e: tag_info(e, canvas, deselected,
         #                                              stars_mag_list))  # middle mouse, just to see the tags of the selected star
 
-        return deselected, n_stars_min, stars_flux, stars_mag_list, positions
+        return deselected, n_stars_min, stars_flux, positions
 
     def shift_data(self, data, n_len, offset, pixel):
         for i in range(n_len):
@@ -378,6 +376,39 @@ class MainWindow(QWidget):
     #         #                                                 path_save, time_stamp, False)
         pass
 
+    @Slot(StarEllipse)
+    def info_star(self, star: StarEllipse): # event, canvas, deselected, stars_mag_list, short_wave_colour, long_wave_colour):
+        index = star.data(0)
+
+        typed_mag_1, ok = QInputDialog.getDouble(self, "", self.input_cmd["short_colour"])
+        if not ok:
+            QMessageBox.warning(self, "", "Expected valid floating point number")
+            return
+
+        typed_mag_2, ok = QInputDialog.getDouble(self, "", self.input_cmd["long_colour"])
+        if not ok:
+            QMessageBox.warning(self, "", "Expected valid floating point number")
+            return
+
+        for i in range(len(self.stars_mag_list)):
+            if self.stars_mag_list[i][0] == 0 and self.stars_mag_list[i][1] == index:
+                self.stars_mag_list.pop(i)
+                break
+        self.stars_mag_list.append([0, index, typed_mag_1])
+
+        for i in range(len(self.stars_mag_list)):
+            if self.stars_mag_list[i][0] == 1 and self.stars_mag_list[i][1] == index:
+                self.stars_mag_list.pop(i)
+                break
+        self.stars_mag_list.append([1, index, typed_mag_2])
+
+        print(f"Set {index} to {typed_mag_1} and {typed_mag_2}")
+        print(self.stars_mag_list)
+
+        star.status |= StarStatus.Labeled
+        star.setData(2, typed_mag_1)
+        star.setData(3, typed_mag_2)
+
     def __init__(self):
         super().__init__()
 
@@ -385,7 +416,8 @@ class MainWindow(QWidget):
             self.input_cmd = tomllib.load(fl)
 
         self.scene = QGraphicsScene()
-        self.graphics_view = QGraphicsView(self.scene)
+        self.graphics_view = StarGraphicsView(self.scene)
+        self.graphics_view.star_chosen.connect(self.info_star)
 
         button_stack = QVBoxLayout()
 
