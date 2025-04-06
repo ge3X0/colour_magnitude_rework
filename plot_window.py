@@ -9,13 +9,19 @@ from star_ellipse import StarEllipse, StarStatus
 
 
 class PlotWindow(QWidget):
+    # Signal is emitted when the window is closed. Used to remove it from the MainWindow list
     closed = Signal(QWidget)
+
+    # Signal is emitted when fhd data should be saved
     saving = Signal(np.ndarray, np.ndarray)
+
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         self.figure_canvas = FigureCanvasQTAgg()
+
+        # Used to save fhd data
         self.mag_short = None
         self.mag_long = None
 
@@ -25,6 +31,8 @@ class PlotWindow(QWidget):
         save_button.clicked.connect(self.save_button_clicked)
         button_stack.addWidget(save_button)
 
+        # TODO save-image button?
+
         self.layout = QHBoxLayout(self)
         self.layout.addWidget(self.figure_canvas)
         self.layout.addLayout(button_stack)
@@ -33,12 +41,14 @@ class PlotWindow(QWidget):
 
 
     def closeEvent(self, event):
+        """Informs MainWindow that we would like to close"""
         self.closed.emit(self)
         super().closeEvent(event)
 
 
-    # shows the offset of pictures, aligned by the align function
     def plot_offset(self, offset):
+        """shows the offset of pictures, aligned by the align function"""
+        # TODO looped?
         ax1, ax2 = self.figure_canvas.figure.subplots(2, 1)
 
         ax1.plot(range(1, len(offset[:, 0]) + 1), offset[:, 0])
@@ -67,6 +77,7 @@ class PlotWindow(QWidget):
 
     @Slot()
     def save_button_clicked(self):
+        """Informs MainWindow we would like to save data"""
         if self.mag_long is not None and self.mag_short is not None:
             self.saving.emit(self.mag_short, self.mag_long)
         else:
@@ -74,6 +85,7 @@ class PlotWindow(QWidget):
 
 
     def plot_fhd(self, n_stars_min: int, stars: list[StarEllipse], input_cmd: dict, stars_flux, reddening):
+        # TODO is n_stars_min == len(stars) ?
         ax = self.figure_canvas.figure.subplots()
 
         stars_mag_1 = []
@@ -113,6 +125,7 @@ class PlotWindow(QWidget):
             RGB_UBV_converter_long = np.poly1d(fit_result_long)
 
             # plot the conversion function
+            # TODO: is this needed?
             # x_short = np.linspace(np.amin(ref_mag_RGB[:, 0]), np.amax(ref_mag_RGB[:, 0]), 2)
             # x_long = np.linspace(np.amin(ref_mag_RGB[:, 1]), np.amax(ref_mag_RGB[:, 1]), 2)
 
@@ -153,9 +166,7 @@ class PlotWindow(QWidget):
         ax.set_xlabel(f"Colour Index ({input_cmd['short_colour']}-{input_cmd['long_colour']}) {ex}")
         ax.set_ylabel(f"{input_cmd['long_colour']} {ex}")
 
-        for star in stars:
-            if StarStatus.Selected not in star.status:
-                continue
+        for star in filter(lambda x: StarStatus.Selected in x.status, stars):
             ax.plot(colour_index_0[star.index], self.mag_long[star.index], 'bo')
 
         ax.invert_yaxis()

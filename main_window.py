@@ -18,6 +18,9 @@ from plot_window import PlotWindow
 
 
 class MainWindow(QWidget):
+    # TODO: save selection and values
+    # TODO: dump log if wanted
+
     def init_fhd(self, reference_fit, scidata, n_fits, pixel):
         """Initialize pictures and data"""
 
@@ -35,9 +38,10 @@ class MainWindow(QWidget):
 
         # stars flux are only numbers, they are made from a circle around the position of a star and the sum of it.
         for i in range(n_fits):
-            arr2d = []
-            for a in range(len(self.positions[i, :, 0])):
-                arr2d.append([self.positions[i, a, 0], self.positions[i, a, 1]])
+            arr2d = [
+                [self.positions[i, a, 0], self.positions[i, a, 1]]
+                for a in range(len(self.positions[i, :, 0]))
+            ]
 
             apertures = CircularAperture(arr2d, r=r_aperture * FWHM)  # the area, where the flux is going to be taken from
             phot = aperture_photometry(scidata[i, :, :] - median[i], apertures)  # the numbers are generated from the specific area of 'apertures'
@@ -45,14 +49,15 @@ class MainWindow(QWidget):
 
         # creating the ovals around the stars for user input
         for j in range(self.n_stars_min):
-            e = StarEllipse(QRect(
+            e = StarEllipse(
+                j,      # index
+                QRect(
                     QPoint(self.positions[reference_fit, j, 0] - 3 / 2 * r_aperture * FWHM,
                            self.positions[reference_fit, j, 1] - 3 / 2 * r_aperture * FWHM,),
                     QPoint(self.positions[reference_fit, j, 0] + 3 / 2 * r_aperture * FWHM,
                            self.positions[reference_fit, j, 1] + 3 / 2 * r_aperture * FWHM,)
-                )
+                ),
             )
-            e.index = j
             # TODO: unused?
             # e.setData(1, self.stars_flux[reference_fit, j])
 
@@ -65,8 +70,9 @@ class MainWindow(QWidget):
         Controls are: Left click - deselect ; right click - type in magnitude
         """)
 
-
-    def shift_data(self, data, n_len, offset, pixel):
+    @staticmethod
+    def shift_data(data, n_len, offset, pixel):
+        """Extracted from old script, as this code block was used multiple times"""
         for i in range(n_len):
             upper0 = abs(max(0, offset[i, 0]))
             lower0 = abs(min(0, offset[i, 0]))
@@ -143,8 +149,10 @@ class MainWindow(QWidget):
         # flat fielding
         #
         if self.input_cmd["do_flat"]:
+            # Define identity lambda if not dark correction can/should be used for flats
             dark_correct_flats = lambda x: x
 
+            # Define dark_correct_flats otherwise
             if self.input_cmd["do_dark_flat"]:
                 if lst := util.get_fits_names(self.input_cmd["path_dark_flat"]):
                     flat_darks = util.fits_to_array(lst)
@@ -152,6 +160,7 @@ class MainWindow(QWidget):
                 else:
                     self.logger.append("No dark correction files were found for flats")
 
+            # Flatfielding starts here
             if lst := util.get_fits_names(self.input_cmd["path_flat_short"]):
                 frames = dark_correct_flats(util.fits_to_array(lst))
                 scidata[:n_short_light] = util.flat_correction(scidata[:n_short_light], frames)
@@ -164,13 +173,7 @@ class MainWindow(QWidget):
             else:
                 self.logger.append("No flatfielding files found for long wavelengths")
 
-        if frames:
-            del frames
-
         reference_fit = 0  # 0 = short wavelength; 1 = long wavelength
-
-        # fit_list_temp = fit_list
-        # fit_list = []
 
         # here the master lights are created, after each picture was offset-aligned regarding your input
         short_wave_scidata = scidata[:n_short_light, :, :]
@@ -256,6 +259,7 @@ class MainWindow(QWidget):
 
     @Slot()
     def button_toggle_selection_clicked(self):
+        """Toggles selection of ALL Stars"""
         for star in self.graphics_view.stars():
             star.status ^= StarStatus.Selected
 
@@ -271,28 +275,41 @@ class MainWindow(QWidget):
 
     @Slot(StarEllipse)
     def info_star(self, star: StarEllipse):
-        # TODO: remove from list on 0 0
-        typed_mag_1, ok = QInputDialog.getDouble(self, "", self.input_cmd["short_colour"])
+        """Set values of one star"""
+
+        # Ask for both values
+
+        typed_mag_1, ok = QInputDialog.getDouble(self, "", self.input_cmd["short_colour"], value=star.vmag1)
         if not ok:
             QMessageBox.warning(self, "", "Expected valid floating point number")
             return
 
-        typed_mag_2, ok = QInputDialog.getDouble(self, "", self.input_cmd["long_colour"])
+        typed_mag_2, ok = QInputDialog.getDouble(self, "", self.input_cmd["long_colour"], value=star.vmag2)
         if not ok:
             QMessageBox.warning(self, "", "Expected valid floating point number")
             return
 
-        self.logger.append(f"Set {star.index} to {typed_mag_1} and {typed_mag_2}")
-
-        star.status |= StarStatus.Labeled
+        # Update star
         star.vmag1 = typed_mag_1
         star.vmag2 = typed_mag_2
 
-        star.setToolTip(f"{self.input_cmd['short_colour']}: {typed_mag_1} | {self.input_cmd['long_colour']}: {typed_mag_2}")
+        # Change status: Colour etc. will be adjusted automatically
+
+        # Unset star if both values are 0
+        if typed_mag_1 == 0.0 and typed_mag_2 == 0.0:
+            self.logger.append(f"Unset {star.index}")
+            star.status &= ~StarStatus.Labeled
+            star.setToolTip("")
+        else:
+            self.logger.append(f"Set {star.index} to {typed_mag_1} and {typed_mag_2}")
+            star.status |= StarStatus.Labeled
+            star.setToolTip(f"{self.input_cmd['short_colour']}: {typed_mag_1} | {self.input_cmd['long_colour']}: {typed_mag_2}")
 
 
     @Slot(np.ndarray, np.ndarray)
     def save_fhd_files(self, mag_short: np.ndarray, mag_long: np.ndarray):
+        """Called from PlotWindow to save fhd data"""
+
         swc = self.input_cmd["short_colour"]
         lwc = self.input_cmd["long_colour"]
 
@@ -301,6 +318,8 @@ class MainWindow(QWidget):
             save_file.parent.mkdir(parents=True, exist_ok=True)
 
         with save_file.open("w+") as fl:
+            # TODO: less decimals?
+            # TODO: more values?
             fl.write(f"#ID\tx[px]\ty[px]\tflux_{swc}[ADU]\tflux_{lwc}[ADU]\t{swc}_mag\t{lwc}_mag\n")
             lines = [
                 f"{star.index}\t{self.positions[0,star.index,0]}\t{self.positions[0,star.index,1]}\t"
@@ -312,6 +331,7 @@ class MainWindow(QWidget):
 
     @Slot(QWidget)
     def plot_window_closed(self, win: QWidget):
+        """Delete PlotWindows from set to free memory"""
         self.plot_windows.remove(win)
 
 
@@ -324,9 +344,13 @@ class MainWindow(QWidget):
         with open("input_cmd.toml", "rb") as fl:
             self.input_cmd = tomllib.load(fl)
 
+        # Setup Graphics View
+
         self.scene = QGraphicsScene()
         self.graphics_view = StarGraphicsView(self.scene)
         self.graphics_view.star_chosen.connect(self.info_star)
+
+        # Setup UI
 
         button_stack = QVBoxLayout()
         button_stack.addStretch()

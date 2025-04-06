@@ -9,39 +9,19 @@ from pathlib import Path
 # converts the fits given in fit_list into arrays
 def fits_to_array(fit_list):
     return np.array([np.float64(fits.getdata(fit_name, 0)) for fit_name in fit_list])
-    # if not quiet:
-    #     print('    Reading data from fits file {0} ...'.format(fit_list[0]))
-    # pixel = fits.open(fit_list[0])[0].shape
-    # n_fits = len(fit_list)
-    # scidata = np.zeros((n_fits, pixel[0], pixel[1]), dtype=np.float64)
-    #
-    # for i in range(n_fits):
-    #     scidata[i] = np.float64(fits.getdata(fit_list[i], 0))
-    #
-    # return scidata
-
-
-# =====================================================================================================================#
-# =====================================================================================================================#
-# =====================================================================================================================#
 
 
 # creates the median of the given list
-def create_master(frame_list, median=True, quiet=False):
+def create_master(frame_list, median=True):
     if np.shape(frame_list)[0] > 1:
         if median:
-            masterframe = np.median(frame_list, axis=0)
+            master_frame = np.median(frame_list, axis=0)
         else:
-            masterframe = np.mean(frame_list, axis=0)
+            master_frame = np.mean(frame_list, axis=0)
     else:
-        masterframe = frame_list[0]
+        master_frame = frame_list[0]
 
-    return masterframe
-
-
-# =====================================================================================================================#
-# =====================================================================================================================#
-# =====================================================================================================================#
+    return master_frame
 
 
 # user can choose pictures for the dark frame correction
@@ -50,11 +30,6 @@ def dark_correction(scidata, scidata_dark, quiet=False):
     scidata = scidata - masterdark
 
     return scidata
-
-
-# =====================================================================================================================#
-# =====================================================================================================================#
-# =====================================================================================================================#
 
 
 # creates a flat corrected scidata with raw scidata and the scidata from the flat-fits
@@ -71,20 +46,6 @@ def flat_correction(scidata, scidata_flats):
 
 def get_fits_names(path_to_fits: Path | str) -> list[Path]:
     return sorted(Path(path_to_fits).glob("*.fit?", case_sensitive=False))
-    # fit_list = glob.glob(path_to_fits + '*.fits')
-    # fit_list.extend(glob.glob(path_to_fits + '*.fit'))
-    # fit_list.extend(glob.glob(path_to_fits + '*.FITS'))
-    # fit_list.extend(glob.glob(path_to_fits + '*.FIT'))
-    # fit_list.sort()
-    #
-    # print('    Found %i FIT(S)' % (len(fit_list)))
-    #
-    # return fit_list
-
-
-# =====================================================================================================================#
-# =====================================================================================================================#
-# =====================================================================================================================#
 
 
 def detect_star(n_stars_min, scidata, median, std, FWHM, ratio_gauss, factor_threshold):
@@ -164,11 +125,6 @@ def detect_star(n_stars_min, scidata, median, std, FWHM, ratio_gauss, factor_thr
     return sources, n_stars_min, positions
 
 
-# =====================================================================================================================#
-# =====================================================================================================================#
-# =====================================================================================================================#
-
-
 # for alignment of the stars -> offset
 def get_offset(scidata, median, std, reference_fit=0):
     n_fits = scidata.shape[0]
@@ -192,11 +148,6 @@ def get_offset(scidata, median, std, reference_fit=0):
     return offset
 
 
-# =====================================================================================================================#
-# =====================================================================================================================#
-# =====================================================================================================================#
-
-
 def get_stats(scidata):
     if scidata.ndim == 3:
         n_fits = scidata.shape[0]
@@ -209,11 +160,6 @@ def get_stats(scidata):
         mean, median, std = sigma_clipped_stats(scidata[:, :], sigma=3.0)
 
     return mean, median, std
-
-
-# =====================================================================================================================#
-# =====================================================================================================================#
-# =====================================================================================================================#
 
 
 
@@ -235,11 +181,6 @@ def histeq(im, pixel, n_bins=2 ** 16):
     im2 = im2 / np.amax(im2) * (2 ** 16 - 1)
 
     return np.array(im2, dtype=np.float64).reshape(im.shape)
-
-
-# =====================================================================================================================#
-# =====================================================================================================================#
-# =====================================================================================================================#
 
 
 # log stretch of the histogram for nicer display
