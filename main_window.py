@@ -19,9 +19,11 @@ from plot_window import PlotWindow
 class MainWindow(QWidget):
     # TODO: show mag via tooltip on hove
 
-    def init_fhd(self, reference_fit, scidata, n_fits, pixel, FWHM, ratio_gauss, factor_threshold, r_aperture):
+    def init_fhd(self, reference_fit, scidata, n_fits, pixel):
         """Initialize pictures and data"""
 
+        FWHM = self.input_cmd["FWHM"]
+        r_aperture = self.input_cmd["r_aperture"]
         mean, median, std = util.get_stats(scidata)
         self.offset = util.get_offset(scidata, median, std, reference_fit)
 
@@ -29,7 +31,7 @@ class MainWindow(QWidget):
         self.shift_data(scidata, n_fits, self.offset, pixel)
 
         # the stars of the images are found here and the positions are saved
-        _, self.n_stars_min, self.positions = util.detect_star(self.n_stars_min, scidata, median, std, FWHM, ratio_gauss, factor_threshold)
+        _, self.n_stars_min, self.positions = util.detect_star(self.n_stars_min, scidata, median, std, FWHM, self.input_cmd["ratio"], self.input_cmd["threshold"])
 
         self.stars_flux = np.zeros((n_fits, self.n_stars_min))
         self.stars_mag_list = []
@@ -99,7 +101,6 @@ class MainWindow(QWidget):
         print('... done')
         print('')
 
-        n_fits = len(fit_list)
         scidata = util.fits_to_array(fit_list)
         pixel = scidata[0].shape
 
@@ -284,7 +285,6 @@ class MainWindow(QWidget):
         print('')
 
         rescaled_scidata_frame = scidata[reference_fit]
-        rescaled_pixel = pixel
 
         print('Creating window ...')
 
@@ -306,23 +306,9 @@ class MainWindow(QWidget):
         print('... done')
         print('')
 
-        # TODO: ignored these
-        # read some values from input_cmd.dat
-        #
-        FWHM = self.input_cmd["FWHM"]
-        ratio_gauss = self.input_cmd["ratio"]
-        factor_threshold = self.input_cmd["threshold"]
-        r_aperture = self.input_cmd["r_aperture"]
-
         # the most work is done in init_fhd, it gives all the information for the colour magnitude diagram
-        self.init_fhd(reference_fit, scidata, n_fits, pixel, FWHM, ratio_gauss, factor_threshold, r_aperture)
-        # n_stars_min, estars_flux, stars_mag_list, positions = self.init_fhd(reference_fit, n_stars_min, scidata,
-        #                                                                            n_fits,
-        #                                                                            pixel, short_wave_colour,
-        #                                                                            long_wave_colour,
-        #                                                                            short_wave_offset, long_wave_offset,
-        #                                                                            reddening, FWHM, ratio_gauss,
-        #                                                                            factor_threshold, r_aperture)
+        self.init_fhd(reference_fit, scidata, n_fits, pixel)
+
 
     @Slot()
     def button_offset_master_clicked(self):
