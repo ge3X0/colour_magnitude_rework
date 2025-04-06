@@ -8,6 +8,7 @@ import util
 
 import tomllib
 from pathlib import Path
+from datetime import date, datetime
 
 from PIL import Image
 
@@ -32,7 +33,6 @@ class MainWindow(QWidget):
 
         # the stars of the images are found here and the positions are saved
         _, self.n_stars_min, self.positions = util.detect_star(self.n_stars_min, scidata, median, std, FWHM, self.input_cmd["ratio"], self.input_cmd["threshold"])
-
         self.stars_flux = np.zeros((n_fits, self.n_stars_min))
         self.stars_mag_list = []
 
@@ -57,6 +57,7 @@ class MainWindow(QWidget):
                 )
             )
             e.setData(0, j)
+            # TODO: unused?
             e.setData(1, self.stars_flux[reference_fit, j])
 
             self.scene.addItem(e)
@@ -82,6 +83,7 @@ class MainWindow(QWidget):
             tmp = np.pad(data[i], ((upper0, lower0), (upper1, lower1)), mode='constant')
             data[i] = tmp[lower0: pixel[0] + lower0, lower1:pixel[1] + lower1]
 
+
     def setup(self):
         self.n_stars_min = 1
 
@@ -90,121 +92,74 @@ class MainWindow(QWidget):
         short_wave_FIT_list = fit_list
         n_short_light = len(short_wave_FIT_list)
         print('... done')
-        print('')
 
         print('Searching for light frames of long wavelength ...')
-        fit_list_temp = util.get_fits_names(self.input_cmd["path_light_long"])
-        long_wave_FIT_list = fit_list_temp
+        long_wave_FIT_list = util.get_fits_names(self.input_cmd["path_light_long"])
         n_long_light = len(long_wave_FIT_list)
-        for i in range(n_long_light):
-            fit_list.append(long_wave_FIT_list[i])
+        fit_list.extend(long_wave_FIT_list)
         print('... done')
-        print('')
 
         scidata = util.fits_to_array(fit_list)
         pixel = scidata[0].shape
+
+        frames = None
 
         # dark correction
         #
         if self.input_cmd["do_dark"]:
             print('Searching for dark frames of short wavelength ...')
-            fit_list_dark_short = util.get_fits_names(self.input_cmd["path_dark_short"])
-            if len(fit_list_dark_short) < 1:
-                print('No dark correction will be done')
-                print('')
-            else:
+            if lst := util.get_fits_names(self.input_cmd["path_dark_short"]):
                 print('... done')
-                print('')
-                darks_short = util.fits_to_array(fit_list_dark_short)
-                scidata[:n_short_light] = util.dark_correction(scidata[:n_short_light], darks_short)
+                frames = util.fits_to_array(lst)
+                scidata[:n_short_light] = util.dark_correction(scidata[:n_short_light], frames)
+            else:
+                print('No dark correction will be done')
 
             print('Searching for dark frames of long wavelength ...')
-            fit_list_dark_long = util.get_fits_names(self.input_cmd["path_dark_long"])
-            if len(fit_list_dark_long) < 1:
-                print('No dark correction will be done')
-                print('')
-            else:
+            if lst := util.get_fits_names(self.input_cmd["path_dark_long"]):
                 print('... done')
-                print('')
-                darks_long = util.fits_to_array(fit_list_dark_long)
-                scidata[n_short_light:] = util.dark_correction(scidata[n_short_light:], darks_long)
+                frames = util.fits_to_array(lst)
+                scidata[n_short_light:] = util.dark_correction(scidata[n_short_light:], frames)
+            else:
+                print('No dark correction will be done')
 
         # flat fielding
         #
         if self.input_cmd["do_flat"]:
+            dark_correct_flats = lambda x: x
+
+            if self.input_cmd["do_dark_flat"]:
+                print('Searching for dark_flat frames ...')
+                if lst := util.get_fits_names(self.input_cmd["path_dark_flat"]):
+                    print('... done')
+                    flat_darks = util.fits_to_array(lst)
+                    dark_correct_flats = lambda x: util.dark_correction(x, flat_darks)
+                else:
+                    print('No dark correction will be done for the flats')
+
             print('Searching for flatfields of short wavelength ...')
-            fit_list_flat_short = util.get_fits_names(self.input_cmd["path_flat_short"])
-            if len(fit_list_flat_short) < 1:
-                print('No flatfielding will be done')
-                print('')
-            else:
+            if lst := util.get_fits_names(self.input_cmd["path_flat_short"]):
                 print('... done')
-                print('')
-                flats_short = util.fits_to_array(fit_list_flat_short)
+                frames = dark_correct_flats(util.fits_to_array(lst))
+                scidata[:n_short_light] = util.flat_correction(scidata[:n_short_light], frames)
+            else:
+                print('No flatfielding will be done')
 
-                # dark correction of flat fields
-                #
-                if self.input_cmd["do_dark_flat"]:
-                    print('Searching for dark_flat frames ...')
-                    fit_list_dark_flat = util.get_fits_names(self.input_cmd["path_dark_flat"])
-                    if len(fit_list_dark_flat) < 1:
-                        print('No dark correction will be done for the flats')
-                        print('')
-                    else:
-                        print('... done')
-                        print('')
-                        flat_darks = util.fits_to_array(fit_list_dark_flat)
-                        flats_short = util.dark_correction(flats_short, flat_darks)
-
-                scidata[:n_short_light] = util.flat_correction(scidata[:n_short_light], flats_short)
-
-                del flats_short
 
             print('Searching for flatfields of long wavelength ...')
-            fit_list_flat_long = util.get_fits_names(self.input_cmd["path_flat_long"])
-            if len(fit_list_flat_long) < 1:
-                print('No flatfielding will be done')
-                print('')
-            else:
+            if lst := util.get_fits_names(self.input_cmd["path_flat_long"]):
                 print('... done')
-                print('')
-                flats_long = util.fits_to_array(fit_list_flat_long)
-                # dark correction of flat fields
-                #
-                if self.input_cmd["do_dark_flat"]:
-                    print('Searching for dark_flat frames ...')
-                    fit_list_dark_flat = util.get_fits_names(self.input_cmd["path_dark_flat"])
-                    print('... done')
-                    if len(fit_list_dark_flat) < 1:
-                        print('No dark correction will be done for the flats')
-                        print('')
-                    else:
-                        print('')
-                        flat_darks = util.fits_to_array(fit_list_dark_flat)
-                        flats_long = util.dark_correction(flats_long, flat_darks)
+                frames = dark_correct_flats(util.fits_to_array(lst))
+                scidata[n_short_light:] = util.flat_correction(scidata[n_short_light:], frames)
+            else:
+                print('No flatfielding will be done')
 
-                scidata[n_short_light:] = util.flat_correction(scidata[n_short_light:], flats_long)
-
-                del flats_long
-
-        short_wave_colour = self.input_cmd["short_colour"]
-        long_wave_colour = self.input_cmd["long_colour"]
-
-        reference_name_list = []
-
-        if n_short_light == 1:
-            reference_name_list.append(short_wave_FIT_list[0])
-        else:
-            reference_name_list.append('short_wavelength_master')
-        if n_long_light == 1:
-            reference_name_list.append(long_wave_FIT_list[0])
-        else:
-            reference_name_list.append('long_wavelength_master')
+        if frames:
+            del frames
 
         reference_fit = 0  # 0 = short wavelength; 1 = long wavelength
 
         print('Creating light masters ...')
-        print('')
 
         fit_list_temp = fit_list
         fit_list = []
@@ -214,7 +169,7 @@ class MainWindow(QWidget):
         short_wave_scidata = scidata[:n_short_light, :, :]
 
         if n_short_light > 1:
-            mean, median, std = util.get_stats(short_wave_scidata)
+            _, median, std = util.get_stats(short_wave_scidata)
             self.short_wave_offset = util.get_offset(short_wave_scidata, median, std, 0)
             self.shift_data(short_wave_scidata, n_short_light, self.short_wave_offset, pixel)
             master_short_wave = util.create_master(short_wave_scidata)
@@ -225,7 +180,7 @@ class MainWindow(QWidget):
         long_wave_scidata = scidata[n_short_light:n_long_light + n_short_light, :, :]
 
         if n_long_light > 1:
-            mean, median, std = util.get_stats(long_wave_scidata)
+            _, median, std = util.get_stats(long_wave_scidata)
             self.long_wave_offset = util.get_offset(long_wave_scidata, median, std, 0)
             self.shift_data(long_wave_scidata, n_long_light, self.long_wave_offset, pixel)
             master_long_wave = util.create_master(long_wave_scidata)
@@ -233,6 +188,7 @@ class MainWindow(QWidget):
             self.long_wave_offset = np.zeros((n_long_light, 2), dtype=int)
             master_long_wave = long_wave_scidata
 
+        # TODO no copying
         scidata = np.zeros((2, pixel[0], pixel[1]))
         scidata[0, :, :] = master_short_wave
         scidata[1, :, :] = master_long_wave
@@ -251,7 +207,6 @@ class MainWindow(QWidget):
         n_fits = len(scidata[:, 0, 0])
 
         print('     ... done')
-        print('')
 
         path_save = Path(self.input_cmd["path_result"])
 
@@ -260,29 +215,32 @@ class MainWindow(QWidget):
         if not path_save.exists():
             path_save.mkdir(parents=True)
 
-        # hdulist_short = fits.HDUList(fits.PrimaryHDU(data=scidata[0, :, :]))
-        # hdulist_short[0].header = fits.open(short_wave_FIT_list[0])[0].header
-        #
-        # hdulist_short[0].header['BZERO'] = 0.0
-        # hdulist_short[0].header['SNAPSHOT'] = n_short_light
-        # # hdulist_short[0].header['Date'] = time.strftime('%Y-%m-%d')
-        # hdulist_short[0].header['Note'] = 'Created by colour_magnitude_diagram.py'
-        #
-        # hdulist_long = fits.HDUList(fits.PrimaryHDU(data=scidata[1, :, :]))
-        # hdulist_long[0].header = fits.open(long_wave_FIT_list[0])[0].header
-        #
-        # hdulist_long[0].header['BZERO'] = 0.0
-        # hdulist_long[0].header['SNAPSHOT'] = n_long_light
-        # # hdulist_long[0].header['Date'] = time.strftime('%Y-%m-%d')
-        # hdulist_long[0].header['Note'] = 'Created by colour_magnitude_diagram.py'
-        #
-        # time_stamp = datetime.now().isoformat()[:-10]
-        #
-        # hdulist_short.writeto(path_save / short_wave_colour + '_' + time_stamp + '.fits', overwrite=True)
-        # hdulist_long.writeto(path_save / long_wave_colour + '_' + time_stamp + '.fits', overwrite=True)
+        timestamp = datetime.now()
+
+        hdulist_short = fits.HDUList(fits.PrimaryHDU(data=scidata[0, :, :]))
+        with fits.open(short_wave_FIT_list[0]) as hdul:
+            hdulist_short[0].header = hdul[0].header
+
+        hdulist_short[0].header['BZERO'] = 0.0
+        hdulist_short[0].header['SNAPSHOT'] = n_short_light
+        hdulist_short[0].header['Date'] = timestamp.strftime("%Y-%m-%d")
+        hdulist_short[0].header['Note'] = 'Created by colour_magnitude_diagram.py'
+
+        hdulist_long = fits.HDUList(fits.PrimaryHDU(data=scidata[1, :, :]))
+        with fits.open(long_wave_FIT_list[0]) as hdul:
+            hdulist_long[0].header = hdul[0].header
+
+        hdulist_long[0].header['BZERO'] = 0.0
+        hdulist_long[0].header['SNAPSHOT'] = n_long_light
+        hdulist_long[0].header['Date'] = timestamp.strftime("%Y-%m-%d")
+        hdulist_long[0].header['Note'] = 'Created by colour_magnitude_diagram.py'
+
+        tme = timestamp.strftime("%Y-%m-%dT%H-%M-%S")
+
+        hdulist_short.writeto(path_save / f"{self.input_cmd['short_colour']}_{tme}.fits", overwrite=True)
+        hdulist_long.writeto(path_save / f"{self.input_cmd['long_colour']}_{tme}.fits", overwrite=True)
 
         print('... done')
-        print('')
 
         rescaled_scidata_frame = scidata[reference_fit]
 
@@ -290,7 +248,7 @@ class MainWindow(QWidget):
 
         # subtract sky background and set negative values to 0
         #
-        mean, median, std = util.get_stats(rescaled_scidata_frame)
+        _, median, _ = util.get_stats(rescaled_scidata_frame)
         data2show = np.maximum(np.zeros(rescaled_scidata_frame.shape), rescaled_scidata_frame - median)
 
         # equalize the histogram or use log scaling for nicer display of image
@@ -304,7 +262,6 @@ class MainWindow(QWidget):
         self.scene.addPixmap(image2show.toqpixmap())
 
         print('... done')
-        print('')
 
         # the most work is done in init_fhd, it gives all the information for the colour magnitude diagram
         self.init_fhd(reference_fit, scidata, n_fits, pixel)
