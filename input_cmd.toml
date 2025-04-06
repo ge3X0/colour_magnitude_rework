@@ -1,0 +1,48 @@
+# paths to fits files (paths relative to where the script is called; with trailing '/')
+#
+path_light_short = "./data/colour/blue/"
+path_light_long  = "./data/colour/green/"
+path_dark_short  = "./darks/blue/"
+path_dark_long   = "./darks/green/"
+path_flat_short  = "./flats/blue/"
+path_flat_long   = "./flats/green/"
+path_dark_flat   = "./Darks_Flat/"
+
+path_result = "./results/"
+
+#===============================================================
+#===============================================================
+#===============================================================
+
+# perform dark correction? flat field correction? dark correction for the flats?
+#
+do_dark = false
+do_flat = false
+do_dark_flat = false
+
+#===============================================================
+#===============================================================
+#===============================================================
+
+short_colour = "B"
+long_colour = "V"
+
+#===============================================================
+#===============================================================
+#===============================================================
+
+# observatory location
+#
+longitude = 10.112354       # longitude (in degrees) of observatory
+latitude  = 54.347889       # latitude (in degrees) of observatory
+
+#===============================================================
+#===============================================================
+#===============================================================
+
+# photometry
+#
+FWHM       = 2.3            # FWHM of the major axis of stars (2D-Gaussian) in pixels; one pixel w/o binning ~0.9 arcseconds; typical seeing conditions ~2-4 arcseconds
+ratio      = 0.9            # ratio of FWHM_minor and FWHM_major; 1.0 means circular Gaussian
+threshold  = 30.0           # threshold * std = detection threshold for star finding algorithm; std is standard deviation of the sky background, i.e., read out noise + dark current noise
+r_aperture = 1.5            # radius of the circular aperture to count star flux, in units of FWHM; theoretically as large as possible, but possible contamination of other stars nearby
