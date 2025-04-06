@@ -29,14 +29,10 @@ def fits_to_array(fit_list):
 # creates the median of the given list
 def create_master(frame_list, median=True, quiet=False):
     if np.shape(frame_list)[0] > 1:
-        if not quiet:
-            print('    Start master creation ...')
         if median:
             masterframe = np.median(frame_list, axis=0)
         else:
             masterframe = np.mean(frame_list, axis=0)
-        if not quiet:
-            print('    ... done')
     else:
         masterframe = frame_list[0]
 
@@ -50,15 +46,8 @@ def create_master(frame_list, median=True, quiet=False):
 
 # user can choose pictures for the dark frame correction
 def dark_correction(scidata, scidata_dark, quiet=False):
-    if not quiet:
-        print('Start dark frame correction ... ')
-
     masterdark = create_master(scidata_dark)
     scidata = scidata - masterdark
-
-    if not quiet:
-        print('...done')
-        print('')
 
     return scidata
 
@@ -70,17 +59,12 @@ def dark_correction(scidata, scidata_dark, quiet=False):
 
 # creates a flat corrected scidata with raw scidata and the scidata from the flat-fits
 def flat_correction(scidata, scidata_flats):
-    print('Start flatfield correction ... ')
-
     masterflat = create_master(scidata_flats)
     medianflat = np.median(masterflat)
 
     masterflat /= medianflat
 
     scidata /= masterflat
-
-    print('...done')
-    print('')
 
     return scidata
 
@@ -104,8 +88,6 @@ def get_fits_names(path_to_fits: Path | str) -> list[Path]:
 
 
 def detect_star(n_stars_min, scidata, median, std, FWHM, ratio_gauss, factor_threshold):
-    print('Detecting stars ...')
-
     sources = []
 
     n_fits = scidata.shape[0]
@@ -179,9 +161,6 @@ def detect_star(n_stars_min, scidata, median, std, FWHM, ratio_gauss, factor_thr
                     positions[i_fits, i_star, 1] = sources[i_fits]['ycentroid'][l]
                     break
 
-    print('...done!')
-    print('')
-
     return sources, n_stars_min, positions
 
 
@@ -192,8 +171,6 @@ def detect_star(n_stars_min, scidata, median, std, FWHM, ratio_gauss, factor_thr
 
 # for alignment of the stars -> offset
 def get_offset(scidata, median, std, reference_fit=0):
-    print('Alignment ...')
-
     n_fits = scidata.shape[0]
     pixel = scidata.shape[1:]
 
@@ -211,9 +188,6 @@ def get_offset(scidata, median, std, reference_fit=0):
 
     reference = offset[reference_fit]
     offset = offset - reference
-
-    print('... done!')
-    print('')
 
     return offset
 
