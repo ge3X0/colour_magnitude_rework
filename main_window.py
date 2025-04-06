@@ -20,15 +20,15 @@ class MainWindow(QWidget):
     # TODO: show mag via tooltip on hove
 
     def init_fhd(self, reference_fit, scidata, n_fits, pixel, short_wave_colour,
-                 long_wave_colour, offset_short_wave, offset_long_wave, FWHM, ratio_gauss,
+                 long_wave_colour, FWHM, ratio_gauss,
                  factor_threshold, r_aperture):
 
         mean, median, std = util.get_stats(scidata)
 
-        offset = util.get_offset(scidata, median, std, reference_fit)
+        self.offset = util.get_offset(scidata, median, std, reference_fit)
 
         # shift and pad the images; we want the original number of pixel -> only part of the padded array needed
-        self.shift_data(scidata, n_fits, offset, pixel)
+        self.shift_data(scidata, n_fits, self.offset, pixel)
 
         # the stars of the images are found here and the positions are saved
         sources, self.n_stars_min, self.positions = util.detect_star(self.n_stars_min, scidata, median, std, FWHM, ratio_gauss,
@@ -219,22 +219,22 @@ class MainWindow(QWidget):
 
         if n_short_light > 1:
             mean, median, std = util.get_stats(short_wave_scidata)
-            short_wave_offset = util.get_offset(short_wave_scidata, median, std, 0)
-            self.shift_data(short_wave_scidata, n_short_light, short_wave_offset, pixel)
+            self.short_wave_offset = util.get_offset(short_wave_scidata, median, std, 0)
+            self.shift_data(short_wave_scidata, n_short_light, self.short_wave_offset, pixel)
             master_short_wave = util.create_master(short_wave_scidata)
         else:
-            short_wave_offset = np.zeros((n_short_light, 2), dtype=int)
+            self.short_wave_offset = np.zeros((n_short_light, 2), dtype=int)
             master_short_wave = short_wave_scidata
 
         long_wave_scidata = scidata[n_short_light:n_long_light + n_short_light, :, :]
 
         if n_long_light > 1:
             mean, median, std = util.get_stats(long_wave_scidata)
-            long_wave_offset = util.get_offset(long_wave_scidata, median, std, 0)
-            self.shift_data(long_wave_scidata, n_long_light, long_wave_offset, pixel)
+            self.long_wave_offset = util.get_offset(long_wave_scidata, median, std, 0)
+            self.shift_data(long_wave_scidata, n_long_light, self.long_wave_offset, pixel)
             master_long_wave = util.create_master(long_wave_scidata)
         else:
-            long_wave_offset = np.zeros((n_long_light, 2), dtype=int)
+            self.long_wave_offset = np.zeros((n_long_light, 2), dtype=int)
             master_long_wave = long_wave_scidata
 
         scidata = np.zeros((2, pixel[0], pixel[1]))
@@ -321,7 +321,7 @@ class MainWindow(QWidget):
 
         # the most work is done in init_fhd, it gives all the information for the colour magnitude diagram
         self.init_fhd(reference_fit, scidata, n_fits, pixel, short_wave_colour, long_wave_colour,
-                      short_wave_offset, long_wave_offset, FWHM, ratio_gauss, factor_threshold, r_aperture)
+                      FWHM, ratio_gauss, factor_threshold, r_aperture)
         # deselected, n_stars_min, estars_flux, stars_mag_list, positions = self.init_fhd(reference_fit, n_stars_min, scidata,
         #                                                                            n_fits,
         #                                                                            pixel, short_wave_colour,
@@ -332,18 +332,21 @@ class MainWindow(QWidget):
 
     @Slot()
     def button_offset_master_clicked(self):
-        # util.plot_offset(offset)
-        pass
+        plot_win = self.create_plot_window()
+        plot_win.plot_offset(self.offset)
+        plot_win.show()
 
     @Slot()
     def button_offset_short_clicked(self):
-        # util.plot_offset(offset_short_wave)
-        pass
+        plot_win = self.create_plot_window()
+        plot_win.plot_offset(self.short_wave_offset)
+        plot_win.show()
 
     @Slot()
     def button_offset_long_clicked(self):
-        # util.plot_offset(offset_long_wave)
-        pass
+        plot_win = self.create_plot_window()
+        plot_win.plot_offset(self.long_wave_offset)
+        plot_win.show()
 
     @Slot()
     def button_toggle_selection_clicked(self):
@@ -353,13 +356,10 @@ class MainWindow(QWidget):
 
     @Slot()
     def button_preview_clicked(self):
-        plt_win = PlotWindow()
-        plt_win.closed.connect(self.plot_window_closed)
+        plot_win = self.create_plot_window()
 
-        plt_win.plot_fhd(self.n_stars_min, self.stars_flux, self.deselected, self.input_cmd["short_colour"], self.input_cmd["long_colour"], self.reddening_box.value(), self.stars_mag_list, self.positions, self.input_cmd["path_result"], False)
-        plt_win.show()
-
-        self.plot_windows.add(plt_win)
+        plot_win.plot_fhd(self.n_stars_min, self.stars_flux, self.deselected, self.input_cmd["short_colour"], self.input_cmd["long_colour"], self.reddening_box.value(), self.stars_mag_list, self.positions, self.input_cmd["path_result"], False)
+        plot_win.show()
 
 
     @Slot(StarEllipse)
@@ -450,4 +450,11 @@ class MainWindow(QWidget):
         pass
         # plot_fhd(n_stars_min, stars_flux, deselected, short_wave_colour, long_wave_colour, reddening, stars_mag_list,
         #          positions, path_save, time_stamp, True)  # creating the diagram
+
+    def create_plot_window(self) -> PlotWindow:
+        plot_win = PlotWindow()
+        plot_win.closed.connect(self.plot_window_closed)
+
+        self.plot_windows.add(plot_win)
+        return plot_win
 

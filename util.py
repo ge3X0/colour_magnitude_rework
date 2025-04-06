@@ -242,44 +242,6 @@ def get_stats(scidata):
 # =====================================================================================================================#
 
 
-# shows the offset of pictures, aligned by the align function
-def plot_offset(offset):
-    plt.clf()
-    plt.close('all')
-    plt.subplot(2, 1, 1)
-
-    plt.plot(range(1, len(offset[:, 0]) + 1), offset[:, 0])
-
-    n_ticks_x = min(len(offset[:, 0]), 15)
-    n_ticks_y = min(abs(max(offset[:, 0]) - min(offset[:, 0])) + 2, 15)
-
-    plt.yticks(np.linspace(min(offset[:, 0]) - 1, max(offset[:, 0]) + 1, n_ticks_y).astype(
-        int))  # having only integers at the y axis
-    plt.xticks(np.linspace(1, len(offset[:, 0]), n_ticks_x).astype(int))  # and only integers on the x axis
-
-    plt.ylabel('Offset in x direction [px]')
-
-    plt.subplot(2, 1, 2)
-
-    plt.plot(range(1, len(offset[:, 1]) + 1), offset[:, 1])
-
-    n_ticks_x = min(len(offset[:, 1]), 15)
-    n_ticks_y = min(abs(max(offset[:, 1]) - min(offset[:, 1])) + 2, 15)
-
-    plt.yticks(np.linspace(min(offset[:, 1]) - 1, max(offset[:, 1]) + 1, n_ticks_y).astype(
-        int))  # having only integers at the y axis
-    plt.xticks(np.linspace(1, len(offset[:, 1]), n_ticks_x).astype(int))  # and only integers on the x axis
-
-    plt.ylabel('Offset in y direction [px]')
-    plt.xlabel('Image Number')
-
-    plt.show()
-
-
-# =====================================================================================================================#
-# =====================================================================================================================#
-# =====================================================================================================================#
-
 
 # equalize the histogram for nicer display
 #

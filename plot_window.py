@@ -13,7 +13,6 @@ class PlotWindow(QWidget):
         super().__init__(*args, **kwargs)
 
         self.figure_canvas = FigureCanvasQTAgg()
-        self.ax = self.figure_canvas.figure.subplots()
 
         self.layout = QHBoxLayout(self)
         self.layout.addWidget(self.figure_canvas)
@@ -22,9 +21,38 @@ class PlotWindow(QWidget):
         self.closed.emit(self)
         super().closeEvent(event)
 
+    # shows the offset of pictures, aligned by the align function
+    def plot_offset(self, offset):
+        ax1, ax2 = self.figure_canvas.figure.subplots(2, 1)
+
+        ax1.plot(range(1, len(offset[:, 0]) + 1), offset[:, 0])
+
+        n_ticks_x = min(len(offset[:, 0]), 15)
+        n_ticks_y = min(abs(max(offset[:, 0]) - min(offset[:, 0])) + 2, 15)
+
+        ax1.set_yticks(np.linspace(min(offset[:, 0]) - 1, max(offset[:, 0]) + 1, n_ticks_y).astype(
+            int))  # having only integers at the y axis
+        ax1.set_xticks(np.linspace(1, len(offset[:, 0]), n_ticks_x).astype(int))  # and only integers on the x axis
+
+        ax1.set_ylabel('Offset in x direction [px]')
+
+        ax2.plot(range(1, len(offset[:, 1]) + 1), offset[:, 1])
+
+        n_ticks_x = min(len(offset[:, 1]), 15)
+        n_ticks_y = min(abs(max(offset[:, 1]) - min(offset[:, 1])) + 2, 15)
+
+        ax2.set_yticks(np.linspace(min(offset[:, 1]) - 1, max(offset[:, 1]) + 1, n_ticks_y).astype(
+            int))  # having only integers at the y axis
+        ax2.set_xticks(np.linspace(1, len(offset[:, 1]), n_ticks_x).astype(int))  # and only integers on the x axis
+
+        ax2.set_ylabel('Offset in y direction [px]')
+        ax2.set_xlabel('Image Number')
+
 
     def plot_fhd(self, n_stars_min, stars_flux, deselected, short_wave_colour, long_wave_colour, reddening, stars_mag_list,
                  positions, path_save, quit_save=False):
+        ax = self.figure_canvas.figure.subplots()
+
         stars_mag_1 = []
         stars_mag_2 = []
 
@@ -105,9 +133,9 @@ class PlotWindow(QWidget):
         colour_index_0 = colour_index - reddening
 
         if arbitrary_unit_mag == 0:
-            self.ax.set_ylabel(long_wave_colour + ' [mag]')
+            ax.set_ylabel(long_wave_colour + ' [mag]')
         else:
-            self.ax.set_ylabel(long_wave_colour + ' [a.u.]')
+            ax.set_ylabel(long_wave_colour + ' [a.u.]')
 
         if quit_save:
             # TODO timestamp
@@ -119,18 +147,18 @@ class PlotWindow(QWidget):
 
         for i in range(n_stars_min):
             if deselected[i] == 0:  # 1 means not in the cluster
-                self.ax.plot(colour_index_0[i], mag_long[i], 'bo')
+                ax.plot(colour_index_0[i], mag_long[i], 'bo')
                 if quit_save:
                     f.write('%3.3i \t %5.1f \t %5.1f \t %10.4f \t %10.4f \t %8.4f \t %8.4f \n'
                             % (i, positions[0, i, 0], positions[0, i, 1],
                                stars_flux[0, i], stars_flux[1, i],
                                mag_short[i], mag_long[i]))
 
-        self.ax.invert_yaxis()
+        ax.invert_yaxis()
         if arbitrary_unit_mag == 0:
-            self.ax.set_xlabel('Colour Index (%s-%s)_0 [mag]' % (short_wave_colour, long_wave_colour))
+            ax.set_xlabel('Colour Index (%s-%s)_0 [mag]' % (short_wave_colour, long_wave_colour))
         else:
-            self.ax.set_xlabel('Colour Index (%s-%s)_0 [a.u.]' % (short_wave_colour, long_wave_colour))
+            ax.set_xlabel('Colour Index (%s-%s)_0 [a.u.]' % (short_wave_colour, long_wave_colour))
 
         if quit_save:
             f.close()
