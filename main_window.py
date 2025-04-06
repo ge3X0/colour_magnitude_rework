@@ -320,6 +320,7 @@ class MainWindow(QWidget):
         with save_file.open("w+") as fl:
             # TODO: less decimals?
             # TODO: more values?
+            # TODO: do we need positions?
             fl.write(f"#ID\tx[px]\ty[px]\tflux_{swc}[ADU]\tflux_{lwc}[ADU]\t{swc}_mag\t{lwc}_mag\n")
             lines = [
                 f"{star.index}\t{self.positions[0,star.index,0]}\t{self.positions[0,star.index,1]}\t"
