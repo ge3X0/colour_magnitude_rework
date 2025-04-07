@@ -313,14 +313,14 @@ class MainWindow(QWidget):
 
         # Ask for both values
 
-        typed_mag_1, ok = QInputDialog.getDouble(self, "", self.input_cmd["short_colour"], value=star.vmag1, decimals=5)
+        typed_mag_1, ok = QInputDialog.getDouble(self, "Input short colour", f"Input {self.input_cmd['short_colour']}", value=star.vmag1, decimals=3)
         if not ok:
-            QMessageBox.warning(self, "", "Expected valid floating point number")
+            QMessageBox.warning(self, "Aborting", "Expected valid floating point number")
             return
 
-        typed_mag_2, ok = QInputDialog.getDouble(self, "", self.input_cmd["long_colour"], value=star.vmag2, decimals=5)
+        typed_mag_2, ok = QInputDialog.getDouble(self, "Input long colour", f"Input {self.input_cmd['long_colour']}", value=star.vmag2, decimals=3)
         if not ok:
-            QMessageBox.warning(self, "", "Expected valid floating point number")
+            QMessageBox.warning(self, "Aborting", "Expected valid floating point number")
             return
 
         # Update star
@@ -362,7 +362,7 @@ class MainWindow(QWidget):
                 for star in filter(lambda x: StarStatus.Selected in x.status, self.graphics_view.stars())]
             fl.writelines(lines)
 
-        QMessageBox.information(self, "", "Data saved successfully")
+        QMessageBox.information(self, "Data saved", f"Data written to {save_file}")
 
     @Slot(QWidget)
     def plot_window_closed(self, win: QWidget):

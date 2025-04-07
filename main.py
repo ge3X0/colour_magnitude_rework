@@ -16,6 +16,7 @@ if __name__ == "__main__":
         padding: 12px;
     }
     """)
+
     window = MainWindow()
     window.showMaximized()
     window.show()

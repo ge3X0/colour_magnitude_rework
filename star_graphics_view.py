@@ -14,7 +14,6 @@ class StarGraphicsView(QGraphicsView):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.setDragMode(QGraphicsView.DragMode.ScrollHandDrag)
 
     def stars(self) -> Iterator[StarEllipse]:
         """
@@ -34,9 +33,21 @@ class StarGraphicsView(QGraphicsView):
         match event.button():
             # Select or deselect a star to be part of the star-accumulation
             case Qt.MouseButton.LeftButton:
-                self.toggle_selection(event.pos())
+                match event.modifiers():
 
-            # Signal MainWindow that we would like to set parameters for this particular star
+                    # Press shift to activate rubber band selection
+                    case Qt.KeyboardModifier.ShiftModifier:
+                        self.setDragMode(QGraphicsView.DragMode.RubberBandDrag)
+
+                    # Press ctrl to move canvas
+                    case Qt.KeyboardModifier.ControlModifier:
+                        self.setDragMode(QGraphicsView.DragMode.ScrollHandDrag)
+
+                    # No modifiers: just toggle star
+                    case _:
+                        self.toggle_selection(event.pos())
+
+        # Signal MainWindow that we would like to set parameters for this particular star
             case Qt.MouseButton.RightButton:
                 if star := self.get_star_at(event.pos()):
                     self.star_chosen.emit(star)
@@ -45,6 +56,16 @@ class StarGraphicsView(QGraphicsView):
                 pass
 
         super().mousePressEvent(event)
+
+    def mouseReleaseEvent(self, event: QMouseEvent):
+        # Select stars with rubber band
+        if event.button() == Qt.MouseButton.LeftButton and self.dragMode() == QGraphicsView.DragMode.RubberBandDrag:
+            select_rect = self.mapToScene(self.rubberBandRect())
+            for star in filter(lambda x: isinstance(x, StarEllipse), self.scene().items(select_rect)):
+                star.status ^= StarStatus.Selected
+
+        self.setDragMode(QGraphicsView.DragMode.NoDrag)
+        super().mouseReleaseEvent(event)
 
     def wheelEvent(self, event: QWheelEvent):
         """Implement zoom functionality"""
