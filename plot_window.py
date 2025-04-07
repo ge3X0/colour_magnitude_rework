@@ -31,6 +31,8 @@ class PlotWindow(QWidget):
         save_button.clicked.connect(self.save_button_clicked)
         button_stack.addWidget(save_button)
 
+        button_stack.addStretch()
+
         self.layout = QHBoxLayout(self)
         self.layout.addWidget(self.figure_canvas)
         self.layout.addLayout(button_stack)

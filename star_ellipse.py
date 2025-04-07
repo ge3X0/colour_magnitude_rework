@@ -32,6 +32,7 @@ class StarEllipse(QGraphicsEllipseItem):
         self.setPen(Pens.from_status(self.__status))
 
         self.index = 0
+        # TODO: vmag1, vmag2 as on-demand allocated dict in MainWindow?
         self.vmag1 = 0.0
         self.vmag2 = 0.0
         self.flux1 = 0.0

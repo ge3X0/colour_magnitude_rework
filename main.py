@@ -4,7 +4,19 @@ from main_window import MainWindow
 
 if __name__ == "__main__":
     app = QApplication()
+
+    app.setStyleSheet("""
+    QPushButton {
+        min-width: 80px;
+        padding: 12px;
+    }
+    
+    QDoubleSpinBox {
+        width: 120px;
+        padding: 12px;
+    }
+    """)
     window = MainWindow()
-    window.resize(800, 600)
+    window.showMaximized()
     window.show()
     exit(app.exec())

@@ -52,7 +52,6 @@ class MainWindow(QWidget):
         # Setup UI
 
         button_stack = QVBoxLayout()
-        button_stack.addStretch()
 
         reddening_label = QLabel("Reddening")
         self.reddening_box = QDoubleSpinBox(value=0.0)
@@ -75,9 +74,11 @@ class MainWindow(QWidget):
         button_toggle_selection.clicked.connect(self.button_toggle_selection_clicked)
         button_stack.addWidget(button_toggle_selection)
 
-        button_preview = QPushButton("Preview Diagrams")
+        button_preview = QPushButton("FHD Diagram")
         button_preview.clicked.connect(self.button_preview_clicked)
         button_stack.addWidget(button_preview)
+
+        button_stack.addStretch()
 
         self.layout = QHBoxLayout(self)
         self.layout.addWidget(self.graphics_view)
