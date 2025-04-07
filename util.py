@@ -8,7 +8,7 @@ from pathlib import Path
 
 # converts the fits given in fit_list into arrays
 def fits_to_array(fit_list):
-    return np.array([np.float64(fits.getdata(fit_name, 0)) for fit_name in fit_list])
+    return np.array([np.flip(fits.getdata(fit_name, 0)) for fit_name in fit_list])
 
 
 # creates the median of the given list

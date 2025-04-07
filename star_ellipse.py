@@ -23,13 +23,13 @@ class Pens:
 
 
 class StarEllipse(QGraphicsEllipseItem):
-    def __init__(self, index: int, *args, **kwargs):
+    def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         self.__status = StarStatus.Selected
         self.setPen(Pens.from_status(self.__status))
 
-        self.index = index
+        self.index = 0
         self.vmag1 = 0.0
         self.vmag2 = 0.0
         self.flux1 = 0.0
