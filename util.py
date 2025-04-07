@@ -8,6 +8,11 @@ from pathlib import Path
 
 # converts the fits given in fit_list into arrays
 def fits_to_array(fit_list):
+    """
+    Gets data from all files in fit_list and returns them as array
+    Data will be flipped to mimic view through telescope
+    """
+
     return np.array([np.flip(fits.getdata(fit_name, 0)) for fit_name in fit_list])
 
 
@@ -25,9 +30,9 @@ def create_master(frame_list, median=True):
 
 
 # user can choose pictures for the dark frame correction
-def dark_correction(scidata, scidata_dark, quiet=False):
-    masterdark = create_master(scidata_dark)
-    scidata = scidata - masterdark
+def dark_correction(scidata, scidata_dark):
+    master_dark = create_master(scidata_dark)
+    scidata = scidata - master_dark
 
     return scidata
 

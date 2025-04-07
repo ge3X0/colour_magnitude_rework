@@ -20,7 +20,6 @@ from plot_window import PlotWindow
 class MainWindow(QWidget):
     # TODO: save selection and values
     # TODO: dump log if wanted
-    # TODO: flip diagram
 
     @staticmethod
     def shift_data(data, n_len, offset, pixel):

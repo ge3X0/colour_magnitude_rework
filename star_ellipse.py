@@ -11,6 +11,8 @@ class StarStatus(IntFlag):
 
 
 class Pens:
+    """Used to color ellipse around stars depending on its status"""
+
     Deselected = QPen("red")
     Selected = QPen("green")
     DeselectedLabeled = QPen("orange")
@@ -41,5 +43,7 @@ class StarEllipse(QGraphicsEllipseItem):
 
     @status.setter
     def status(self, value):
+        """Set pen automatically according to new status"""
+
         self.__status = value
         self.setPen(Pens.from_status(self.__status))

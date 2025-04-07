@@ -12,24 +12,23 @@ class StarGraphicsView(QGraphicsView):
     # Signal emitted when parameters of a star should be set
     star_chosen = Signal(StarEllipse)
 
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.setDragMode(QGraphicsView.DragMode.ScrollHandDrag)
 
-
     def stars(self) -> Iterator[StarEllipse]:
-        """Returns all StarEllipse instances in the currently held scene"""
-        return filter(lambda x: isinstance(x, StarEllipse), self.scene().items())
+        """
+        Returns all StarEllipse instances in the currently held scene
+        Should be used, as the starmap (pixmap) is also one item of self.scene
+        """
 
+        return filter(lambda x: isinstance(x, StarEllipse), self.scene().items())
 
     def get_star_at(self, pos: QPoint) -> Optional[StarEllipse]:
         """Returns the StarEllipse instance at position pos or None"""
         if (star := self.itemAt(pos)) and isinstance(star, StarEllipse):
             return star
-
         return None
-
 
     def mousePressEvent(self, event: QMouseEvent):
         match event.button():
@@ -47,12 +46,10 @@ class StarGraphicsView(QGraphicsView):
 
         super().mousePressEvent(event)
 
-
     def wheelEvent(self, event: QWheelEvent):
         """Implement zoom functionality"""
         z = 1 + (0.2 if event.angleDelta().y() > 0 else -0.2)
         self.setTransform(self.transform().scale(z, z))
-
 
     def toggle_selection(self, pos: QPoint):
         """Toggles selection of a star. star.status is a property, handling everything concerning graphics etc."""

@@ -31,8 +31,6 @@ class PlotWindow(QWidget):
         save_button.clicked.connect(self.save_button_clicked)
         button_stack.addWidget(save_button)
 
-        # TODO save-image button?
-
         self.layout = QHBoxLayout(self)
         self.layout.addWidget(self.figure_canvas)
         self.layout.addLayout(button_stack)
@@ -48,7 +46,6 @@ class PlotWindow(QWidget):
 
     def plot_offset(self, offset):
         """shows the offset of pictures, aligned by the align function"""
-        # TODO looped?
         ax1, ax2 = self.figure_canvas.figure.subplots(2, 1)
 
         ax1.plot(range(1, len(offset[:, 0]) + 1), offset[:, 0])
