@@ -4,14 +4,49 @@ This is a "Fan"-rewrite of the colour magnitude program of Astrophysics of CAU K
 I did not do any of the fancy "maths"-stuff, but tried to put the existing functionality into a more user friendly
 framework.
 
+## Requirements
+
+- Python Version 3.12 or higher
+- Package-dependencies: see [requirements.txt](requirements.txt)
+
 ## Usage
 
-- Create input_cmd.toml like former input_cmd.dat, just... as toml
-- After loading use mouse wheel to zoom into canvas
-- All found stars are selected for processing by default (green ellipse)
-- Use __left mouse button__ to toggle selection of a single star (red ellipse: deselected)
-- Use __shift__ and __drag left mouse button__ to toggle selection of multiple stars at once
-- Use __ctrl__ and __drag left mouse button__ to move canvas around (when zoomed in)
-- Use __right mouse button__ on a star to define magnitudes (blue ellipse: labeled star)
-  - to "un-label" a star, use __right mouse button__ and set both values to 0
-- Labeled, but deselected stars will appear orange
+- setup by defining values in [input_cmd.toml](input_cmd.toml) in the same directory as main.py
+- Have data ready at paths defined in input_cmd.toml
+- Run
+```shell
+python main.py
+```
+
+## input_cmd.toml
+
+- Paths for fits files (String, multiple files allowed in one directory):
+  - path_light_short = "./data/colour/blue/"
+  - path_light_long
+  - path_dark_short
+  - path_dark_long
+  - path_flat_short
+  - path_flat_long
+  - path_dark_flat
+
+- Output directory (String):
+  - path_result
+
+- Flags for corrections (Booleans):
+  - do_dark: Dark correction (uses path_dark_short and path_dark_long)
+  - do_flat: Flat field correction (uses path_flat_short and path_flat_long)
+  - do_dark_flat: Dark correction for flat fields (uses path_dark_flat)
+
+- Names for colour (Strings, for labels during plotting):
+  - short_colour: Name for short wave colour
+  - long_colour: Name for long wave colour
+
+- Position in degrees of the observatory (Float, optional):
+  - longitude = 10.112354
+  - latitude  = 54.347889
+
+- Data (float):
+  - FWHM: FWHM of the major axis of stars (2D-Gaussian) in pixels; one pixel w/o binning ~0.9 arcseconds; typical seeing conditions ~2-4 arcseconds
+  - ratio: ratio of FWHM_minor and FWHM_major; 1.0 means circular Gaussian
+  - threshold: threshold * std = detection threshold for star finding algorithm; std is standard deviation of the sky background, i.e., read out noise + dark current noise
+  - r_aperture: radius of the circular aperture to count star flux, in units of FWHM; theoretically as large as possible, but possible contamination of other stars nearby
