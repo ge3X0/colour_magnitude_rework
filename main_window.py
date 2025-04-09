@@ -80,9 +80,9 @@ class MainWindow(QWidget):
 
         button_stack.addStretch()
 
-        self.layout = QHBoxLayout(self)
-        self.layout.addWidget(self.graphics_view)
-        self.layout.addLayout(button_stack)
+        self.center = QHBoxLayout(self)
+        self.center.addWidget(self.graphics_view)
+        self.center.addLayout(button_stack)
 
         self.setup()
 

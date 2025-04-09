@@ -7,6 +7,7 @@ from main_window import MainWindow
 # TODO input_cmd longitude/latitude not used
 
 if __name__ == "__main__":
+    print("Starting program, loading data, please wait...")
     app = QApplication()
 
     app.setStyleSheet("""
