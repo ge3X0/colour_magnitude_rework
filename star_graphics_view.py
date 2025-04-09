@@ -8,6 +8,10 @@ from typing import Optional, Iterator
 
 
 class StarGraphicsView(QGraphicsView):
+    """
+    Display class showing converted fits file as star-image
+    Provides framework for Mouse-interactions
+    """
 
     # Signal emitted when parameters of a star should be set
     star_chosen = Signal(StarEllipse)

@@ -7,7 +7,7 @@ from scipy import signal
 from pathlib import Path
 
 # converts the fits given in fit_list into arrays
-def fits_to_array(fit_list):
+def fits_to_array(fit_list: list[Path]) -> np.ndarray:
     """
     Gets data from all files in fit_list and returns them as array
     Data will be flipped to mimic view through telescope
@@ -17,7 +17,7 @@ def fits_to_array(fit_list):
 
 
 # creates the median of the given list
-def create_master(frame_list, median=True):
+def create_master(frame_list: np.ndarray, median: bool = True) -> np.ndarray:
     if np.shape(frame_list)[0] > 1:
         if median:
             master_frame = np.median(frame_list, axis=0)
@@ -30,23 +30,20 @@ def create_master(frame_list, median=True):
 
 
 # user can choose pictures for the dark frame correction
-def dark_correction(scidata, scidata_dark):
-    master_dark = create_master(scidata_dark)
-    scidata = scidata - master_dark
-
-    return scidata
+def dark_correction(scidata: np.ndarray, scidata_dark: np.ndarray) -> np.ndarray:
+    return scidata - create_master(scidata_dark)
 
 
 # creates a flat corrected scidata with raw scidata and the scidata from the flat-fits
-def flat_correction(scidata, scidata_flats):
-    masterflat = create_master(scidata_flats)
-    medianflat = np.median(masterflat)
+def flat_correction(scidata: np.ndarray, scidata_flats: np.ndarray) -> np.ndarray:
+    """Made Method non-mutable"""
 
-    masterflat /= medianflat
+    master_flat = create_master(scidata_flats)
+    median_flat = np.median(master_flat)
 
-    scidata /= masterflat
+    master_flat /= median_flat
 
-    return scidata
+    return scidata / master_flat
 
 
 def get_fits_names(path_to_fits: Path | str) -> list[Path]:
@@ -191,5 +188,5 @@ def histeq(im, pixel, n_bins=2 ** 16):
 # log stretch of the histogram for nicer display
 #
 def hist_log(image, scaling_factor=1000, n_bit=16):
-    return (2 ** n_bit - 1) * np.log10(np.maximum(1e-100, scaling_factor * image / (2 ** n_bit - 1) + 1)) / np.log10(
-        scaling_factor)
+    a = (2 ** n_bit - 1)
+    return a * np.log10( np.maximum(1e-100, scaling_factor * image / a + 1)) / np.log10( scaling_factor)

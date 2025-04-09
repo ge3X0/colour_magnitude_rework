@@ -2,7 +2,6 @@ from PySide6.QtWidgets import QApplication
 
 from main_window import MainWindow
 
-# TODO required python version 3.12
 # TODO message on not finding input files
 # TODO input_cmd longitude/latitude not used
 

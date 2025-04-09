@@ -80,11 +80,10 @@ class PlotWindow(QWidget):
         if self.mag_long is not None and self.mag_short is not None:
             self.saving.emit(self.mag_short, self.mag_long)
         else:
-            QMessageBox.information(self, "", "Saving is only supported for FHD-Plots")
+            QMessageBox.information(self, "No valid Data", "Saving is only supported for FHD-Plots")
 
 
     def plot_fhd(self, n_stars_min: int, stars: list[StarEllipse], input_cmd: dict, reddening: float):
-        # TODO is n_stars_min == len(stars) ?
         ax = self.figure_canvas.figure.subplots()
 
         labeled_stars = list(filter(lambda x: StarStatus.Labeled in x.status, stars))

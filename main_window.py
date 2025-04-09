@@ -98,13 +98,13 @@ class MainWindow(QWidget):
             frames = util.fits_to_array(lst)
             scidata[:n_short_light] = util.dark_correction(scidata[:n_short_light], frames)
         else:
-            self.logger.append("No dark correction files found for short wavelengths")
+            QMessageBox.warning(self, "File not found", "Could not find files for short wave dark correction")
 
         if lst := util.get_fits_names(self.input_cmd["path_dark_long"]):
             frames = util.fits_to_array(lst)
             scidata[n_short_light:] = util.dark_correction(scidata[n_short_light:], frames)
         else:
-            self.logger.append("No dark correction files found for long wavelengths")
+            QMessageBox.warning(self, "File not found", "Could not find files for long wave dark correction")
 
     def flat_fielding(self, scidata: np.ndarray, n_short_light: int):
         # Define identity lambda if not dark correction can/should be used for flats
@@ -116,22 +116,22 @@ class MainWindow(QWidget):
                 flat_darks = util.fits_to_array(lst)
                 dark_correct_flats = lambda x: util.dark_correction(x, flat_darks)
             else:
-                self.logger.append("No dark correction files were found for flats")
+                QMessageBox.warning(self, "File not found", "Could not find files for dark correction of flats")
 
         # Flatfielding starts here
         if lst := util.get_fits_names(self.input_cmd["path_flat_short"]):
             frames = dark_correct_flats(util.fits_to_array(lst))
             scidata[:n_short_light] = util.flat_correction(scidata[:n_short_light], frames)
         else:
-            self.logger.append("No flatfielding files found for short wavelengths")
+            QMessageBox.warning(self, "File not found", "Could not find files for short wave flatfielding")
 
         if lst := util.get_fits_names(self.input_cmd["path_flat_long"]):
             frames = dark_correct_flats(util.fits_to_array(lst))
             scidata[n_short_light:] = util.flat_correction(scidata[n_short_light:], frames)
         else:
-            self.logger.append("No flatfielding files found for long wavelengths")
+            QMessageBox.warning(self, "Files not found", "Could not find files for long wave flatfielding")
 
-    def master_wave(self, data: np.ndarray, n_light: int, pixel) -> tuple[float, float]:
+    def master_wave(self, data: np.ndarray, n_light: int, pixel) -> tuple[np.ndarray, np.ndarray]:
         if n_light > 1:
             _, median, std = util.get_stats(data)
             wave_offset = util.get_offset(data, median, std, 0)
@@ -147,14 +147,23 @@ class MainWindow(QWidget):
         self.n_stars_min = 1
 
         fit_list = util.get_fits_names(self.input_cmd["path_light_short"])
-        short_wave_FIT_list = fit_list
-        n_short_light = len(short_wave_FIT_list)
+        short_wave_fit_list = fit_list
+        n_short_light = len(fit_list)
 
-        long_wave_FIT_list = util.get_fits_names(self.input_cmd["path_light_long"])
-        n_long_light = len(long_wave_FIT_list)
-        fit_list.extend(long_wave_FIT_list)
+        if n_short_light == 0:
+            QMessageBox.warning(self, "File not found", f"Could not find short wave files at {self.input_cmd['path_light_short']}")
+            return
+
+        long_wave_fit_list = util.get_fits_names(self.input_cmd["path_light_long"])
+        n_long_light = len(long_wave_fit_list)
+        fit_list.extend(long_wave_fit_list)
+
+        if n_long_light == 0:
+            QMessageBox.warning(self, "File not found", f"Could not find short wave files at {self.input_cmd['path_light_long']}")
+            return
 
         scidata = util.fits_to_array(fit_list)
+
         pixel = scidata[0].shape
 
         if self.input_cmd["do_dark"]:
@@ -174,7 +183,7 @@ class MainWindow(QWidget):
 
         del master_long_wave, master_short_wave
 
-        self.save_fits_files(scidata, n_short_light, n_long_light, short_wave_FIT_list, long_wave_FIT_list)
+        self.save_fits_files(scidata, n_short_light, n_long_light, short_wave_fit_list, long_wave_fit_list)
 
         reference_fit = 0  # 0 = short wavelength; 1 = long wavelength
         scidata_frame = scidata[reference_fit]
@@ -190,7 +199,6 @@ class MainWindow(QWidget):
         image2show = Image.fromarray(array2show, mode='I;16')
         self.scene.addPixmap(image2show.toqpixmap())
 
-        # the most work is done in init_fhd, it gives all the information for the colour magnitude diagram
         self.init_fhd(reference_fit, scidata, pixel)
 
     def init_fhd(self, reference_fit, scidata, pixel):
@@ -244,7 +252,6 @@ class MainWindow(QWidget):
         """)
 
     def save_fits_files(self, scidata, n_short_light, n_long_light, short_wave_FIT_list, long_wave_FIT_list):
-        return # TODO: remove in final version
         path_save = Path(self.input_cmd["path_result"])
 
         if not path_save.exists():
@@ -351,9 +358,6 @@ class MainWindow(QWidget):
             save_file.parent.mkdir(parents=True, exist_ok=True)
 
         with save_file.open("w+") as fl:
-            # TODO: less decimals?
-            # TODO: more values?
-            # TODO: do we need positions?
             fl.write(f"#ID\tx[px]\ty[px]\tflux_{swc}[ADU]\tflux_{lwc}[ADU]\t{swc}_mag\t{lwc}_mag\n")
             lines = [
                 f"{star.index}\t{self.positions[0,star.index,0]}\t{self.positions[0,star.index,1]}\t"
